@@ -1,4 +1,5 @@
-# Kalos - RPG en Python
+# ⚔️ Kalos ⚔️
+### Un RPG textuel en Python ###
 
 ## 📌 Prérequis
 Avant de commencer, assurez-vous d'avoir les éléments suivants installés sur votre machine :
@@ -15,7 +16,7 @@ Si vous n'avez pas les modules requis, vous pouvez installer les dépendances av
 ### 🔧 Configuration selon l'IDE :
 - **Visual Studio Code** : Aucune configuration requise, tout fonctionne directement !
 - **Thonny** : Modifier l'interpréteur Python pour utiliser celui installé sur votre machine *(Exemple : `C:\Program Files\Python312`)* au lieu de celui de Thonny.
-  ⚠️ ***Dans Thonny, le jeu fonctionne mais sans sons ni musiques !***
+⚠️ ***Dans Thonny, le jeu fonctionne mais sans sons ni musiques !***
 
 ## 🏆 Test de la Quête
 Pour tester le fonctionnement des quêtes :
