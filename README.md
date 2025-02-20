@@ -24,4 +24,4 @@ Pour tester le fonctionnement des quêtes :
 - **Augmenter EN et EN_MAX** dans `PERSONNAGE`.
 - **Utiliser le cheatcode `666`** pendant un combat pour tuer instantanément un ennemi.
 
-🎵 **Activez le son pour une meilleure expérience !** 🔊  
+### 🎵 **Activez le son pour une meilleure expérience !** 🔊  
