@@ -56,6 +56,7 @@ fichiers_sons = {
     "Titre": "title.ogg",
     "Voix": "voice.ogg",
     "Chip": "chip.ogg",
+    "Button": "button.ogg",
     "Tidum": "tidum.ogg",
     "Youpi": "cheers.ogg",
     "Awh": "awh.ogg",
@@ -218,18 +219,19 @@ def sauvegarder_json(profil, savedata):
     dossier = f"saves/{profil}"
     if not os.path.exists(dossier):
         os.makedirs(dossier)
-    nom_fichier = f"{dossier}/save_{datetime.now().strftime('%d%m%Y_%H%M%S')}.json"
+    nom_fichier = f"{dossier}/save_{datetime.now().strftime('%d-%m-%Y_%H-%M-%S')}.json"
     with open(nom_fichier, 'w') as fichier:
         json.dump(savedata, fichier, indent=4)
     playsound("Tidum")
-    print(f"🖫 Le jeu a été sauvegardé en tant que '{nom_fichier}' !")
+    print(f"🖫 Le jeu a été sauvegardé dans '{nom_fichier}'.")
+    wait(0.5)
 
 def charger_json(profil, nom_fichier):
     try:
         with open(f"saves/{profil}/{nom_fichier}", 'r') as fichier:
             savedata = json.load(fichier)
         playsound("Tidum")
-        print(f"↓ Le jeu a été chargé depuis la sauvegarde '{nom_fichier}' !")
+        print(f"↓ Le jeu a été chargé depuis la sauvegarde '{nom_fichier}'.")
         return savedata
     except FileNotFoundError:
         playsound("Chip")
@@ -237,6 +239,7 @@ def charger_json(profil, nom_fichier):
         return
     
 def choisir_profil():
+    playsound("Button")
     print("""
   ╔════════════════════╗
   ║  1)   Profil 1     ║
@@ -299,17 +302,20 @@ def creer_partie(profil):
             "OR": 100
         }
     }
+    wait(1)
     sauvegarder_json(profil, save_data)
     return save_data
 
 def choisir_sauvegarde(profil):
     dossier = f"saves/{profil}"
     if not os.path.exists(dossier):
+        playsound("Chip")
         print("⚠ Aucune sauvegarde trouvée pour ce profil.")
         return None
     fichiers = os.listdir(dossier)
     fichiers = sorted(fichiers, reverse=True)
     if not fichiers:
+        playsound("Chip")
         print("⚠ Aucune sauvegarde disponible.")
         return None
     print("\n📂 Sauvegardes disponibles :")
@@ -328,6 +334,7 @@ def charger_jeu(save_data):
     PERSONNAGE = save_data["PERSONNAGE"]
     INVENTAIRE = save_data["INVENTAIRE"]
     print(f"✔ Partie de {PERSONNAGE['Nom']} chargée avec succès !")
+    wait(0.5)
     voir_infos = input("Voulez-vous voir les infos de votre personnage ? (Oui/Non) : ").strip().lower().startswith("o")
     if voir_infos:
         afficher_stats(PERSONNAGE)
@@ -336,6 +343,7 @@ def charger_jeu(save_data):
         return
 
 def menu_principal():
+    playsound("Button")
     print("""
   ╔═══════════════════════════╗
   ║  1)   Nouvelle partie     ║
@@ -349,6 +357,7 @@ def menu_principal():
             profil = choisir_profil()
             save_defaut = creer_partie(profil)
             charger_jeu(save_defaut)
+            return
 
         elif choix == "2":
             profil = choisir_profil()
@@ -357,6 +366,7 @@ def menu_principal():
                 save_data = charger_json(profil, sauvegarde)
                 if save_data:
                     charger_jeu(save_data)
+            return
 
         elif choix == "0":
             print("À bientôt !")
