@@ -1458,33 +1458,26 @@ def fontaine(perso=PERSONNAGE, inv=INVENTAIRE):
         
 
 ### Exécution ###
-playsound("Titre")
-print("""
-██╗  ██╗ █████╗ ██╗      ██████╗ ███████╗
-██║ ██╔╝██╔══██╗██║     ██╔═══██╗██╔════╝
-█████╔╝ ███████║██║     ██║   ██║███████╗
-██╔═██╗ ██╔══██║██║     ██║   ██║╚════██║
-██║  ██╗██║  ██║███████╗╚██████╔╝███████║
-╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝
-""")
-wait(1)
-progprint("	Par Darius Georgescu", 5, gras=True)
-wait(1)
-menu_principal()
-parametrage()
-for pnj in PNJS.values():
-    choisir_prenom(pnj)
-for i in range(10):
-    village()
-    balade()
-    
+def execution():
+    playsound("Titre")
+    print("""
+    ██╗  ██╗ █████╗ ██╗      ██████╗ ███████╗
+    ██║ ██╔╝██╔══██╗██║     ██╔═══██╗██╔════╝
+    █████╔╝ ███████║██║     ██║   ██║███████╗
+    ██╔═██╗ ██╔══██║██║     ██║   ██║╚════██║
+    ██║  ██╗██║  ██║███████╗╚██████╔╝███████║
+    ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝
+    """)
+    wait(1)
+    progprint("	Par Darius Georgescu", 5, gras=True)
+    wait(1)
+    menu_principal()
+    parametrage()
+    for pnj in PNJS.values():
+        choisir_prenom(pnj)
+    for i in range(100):
+        village()
+        balade()
 
-### To-do list ###
-'''
-✓ Mairie et système de quêtes
-✓ Système de vente au magasin
-✘ Système de campement
-✘ Personnalités d'ennemis
-✘ Système de sauvegarde
-✘ Histoire
-'''
+
+execution()
