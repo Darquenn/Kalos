@@ -1,0 +1,22 @@
+Prérequis:
+    Avant de commencer, assurez-vous d'avoir les éléments suivants installés sur votre machine :
+    - Python 3.6+
+    - Pygame
+    - termcolor
+   (- Colorama)
+
+Installation:
+    Si vous n'avez pas les modules requis, vous pouvez installer les dépendances avec pip en exécutant la commande :
+    pip install -r requirements.txt
+
+Utilisation:
+    Exécuter RPG.py dans un IDE avec terminal intégré comme Visual Studio Code ou Thonny
+    Configuration pour VSC : Aucune, tout fonctionne directement !
+    Configuration pour Thonny : Changer l'interpréteur Python pour être celui installé dans la machine (C:\Program Files\Python312) et non celui de Thonny.
+
+Test de la quête:
+- Augmenter le niveau des autres monstres que Slimy.
+- Augmenter EN et EN_MAX dans PERSONNAGE.
+- Utiliser le cheatcode (666) pendant le combat pour tuer instantanément.
+
+Activer le son pour une meilleure expérience !
