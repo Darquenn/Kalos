@@ -689,11 +689,11 @@ def combat(perso=PERSONNAGE, enn=None, inv=INVENTAIRE):
             description = enn.get('Description', 'Tu ne sais rien sur lui...')
             longueur = max(35, len(description) + 8)
             milieu = longueur // 2
-            progprint(f"╔═══{((longueur - 35) // 2) * "═"} Informations sur l'ennemi {((longueur - 35) // 2) * "═"}═══╗", 0.001, gras=True)
-            progprint(f"║ ✱  {NomEnn} {(milieu - len(NomEnn) - 7) * " "} LVL {LVL} {(milieu - len(str(LVL)) - 6) * " "} ║", 2, gras=True)
-            progprint(f"║ ✱  ATT {ATT} {(milieu - len(str(ATT)) - 11) * " "} DEF {DEF} {(milieu - len(str(DEF)) - 6) * " "} ║", 2, gras=True)
-            progprint(f"║ ✱  {description} {(longueur - len(description) - 8) * " "} ║", 2, gras=True)
-            progprint(f"╚{(longueur - 2) * "═"}╝\n", 0.001, gras=True)
+            progprint(f"╔═══{((longueur - 35) // 2) * '═'} Informations sur l'ennemi {((longueur - 35) // 2) * '═'}═══╗", 0.001, gras=True)
+            progprint(f"║ ✱  {NomEnn} {(milieu - len(NomEnn) - 7) * ' '} LVL {LVL} {(milieu - len(str(LVL)) - 6) * ' '} ║", 2, gras=True)
+            progprint(f"║ ✱  ATT {ATT} {(milieu - len(str(ATT)) - 11) * ' '} DEF {DEF} {(milieu - len(str(DEF)) - 6) * ' '} ║", 2, gras=True)
+            progprint(f"║ ✱  {description} {(longueur - len(description) - 8) * ' '} ║", 2, gras=True)
+            progprint(f"╚{(longueur - 2) * '═'}╝\n", 0.001, gras=True)
             tour -= 1
             wait(1)
             continue
@@ -1033,15 +1033,15 @@ def afficher_stats(perso=PERSONNAGE):
     DEF = perso['DEF']
     Chance = perso['Chance']
     longueur = max(44, (len(NomPerso) + 41))
-    progprint(f"╔═════════{((longueur - 44) // 2) * "═"} Statistiques de {NomPerso} {((longueur - 44) // 2) * "═"}════════╗", 0.001, gras=True)
-    progprint(f"║ ✱  LVL {LVL} {(longueur - len(str(LVL)) - 12) * " "} ║", 2, gras=True)
-    progprint(f"║ ✱  EXP {EXP} {(longueur - len(str(EXP)) + 5) * " "} {gras("║")}", 2, gras=True)
-    progprint(f"║ ✱  PV {PV} {(longueur - len(str(PV)) + 6) * " "} {gras("║")}", 2, gras=True)
-    progprint(f"║ ✱  EN {EN} {(longueur - len(str(EN)) + 6) * " "} {gras("║")}", 2, gras=True)
-    progprint(f"║ ✱  ATT {ATT} {(longueur - len(str(ATT)) - 12) * " "} ║", 2, gras=True)
-    progprint(f"║ ✱  DEF {DEF} {(longueur - len(str(DEF)) - 12) * " "} ║", 2, gras=True)
-    progprint(f"║ ✱  Chance {Chance} {(longueur - len(str(Chance)) - 15) * " "} ║", 2, gras=True)
-    progprint(f"╚{(longueur - 2) * "═"}╝", 0.001, gras=True)
+    progprint(f"╔═════════{((longueur - 44) // 2) * '═'} Statistiques de {NomPerso} {((longueur - 44) // 2) * '═'}════════╗", 0.001, gras=True)
+    progprint(f"║ ✱  LVL {LVL} {(longueur - len(str(LVL)) - 12) * ' '} ║", 2, gras=True)
+    progprint(f"║ ✱  EXP {EXP} {(longueur - len(str(EXP)) + 5) * ' '} {gras('║')}", 2, gras=True)
+    progprint(f"║ ✱  PV {PV} {(longueur - len(str(PV)) + 6) * ' '} {gras('║')}", 2, gras=True)
+    progprint(f"║ ✱  EN {EN} {(longueur - len(str(EN)) + 6) * ' '} {gras('║')}", 2, gras=True)
+    progprint(f"║ ✱  ATT {ATT} {(longueur - len(str(ATT)) - 12) * ' '} ║", 2, gras=True)
+    progprint(f"║ ✱  DEF {DEF} {(longueur - len(str(DEF)) - 12) * ' '} ║", 2, gras=True)
+    progprint(f"║ ✱  Chance {Chance} {(longueur - len(str(Chance)) - 15) * ' '} ║", 2, gras=True)
+    progprint(f"╚{(longueur - 2) * '═'}╝", 0.001, gras=True)
 
 def afficher_inventaire(inv=INVENTAIRE):
     progprint("\n═════════ Inventaire ═════════", gras=True)
