@@ -188,12 +188,8 @@ def cls():
 def parametrage():
     global SONS_ACTIVES, PROGPRINT, COULEUR, code_couleur_CMD
     cprint("\n═════════ Paramètres du jeu ═════════", "light_blue")
-    choix_sons = input(f"♬ Activer les sons et musiques ? [actuel: {'Oui' if SONS_ACTIVES else 'Non'}] : ").strip().lower().startswith("o")
-    if choix_sons in ["oui", "non"]:
-        SONS_ACTIVES = (choix_sons == "oui")
-    choix_progprint = input(f"… Activer l'affichage progressif ? [actuel: {'Oui' if PROGPRINT else 'Non'}] : ").strip().lower().startswith("o")
-    if choix_progprint in ["oui", "non"]:
-        PROGPRINT = (choix_progprint == "oui")
+    SONS_ACTIVES = input(f"♬ Activer les sons et musiques ? [actuel: {'Oui' if SONS_ACTIVES else 'Non'}] : ").strip().lower().startswith("o")
+    PROGPRINT = input(f"… Activer l'affichage progressif ? [actuel: {'Oui' if PROGPRINT else 'Non'}] : ").strip().lower().startswith("o")
     # print("Couleurs disponibles :")
     # for i, (couleur, code) in enumerate(couleurs_CMD.items(), 1):
     #     print(f"  {couleur} ({code})", end="\n" if i % 2 == 0 else "  ")
@@ -248,7 +244,7 @@ def choisir_profil():
   ╚════════════════════╝\n""")
     choix = -1
     while choix not in ["1", "2", "3"]:
-        choix = input("Numéro du profil : ").strip()
+        choix = str(input(">>> ").strip())
     return f"Profil{choix}"
 
 def creer_partie(profil):
@@ -324,7 +320,7 @@ def choisir_sauvegarde(profil):
     print("  0) Annuler")
     choix = -1
     while choix not in [str(i) for i in range(len(fichiers) + 1)]:
-        choix = input("Numéro de la sauvegarde : ").strip()
+        choix = input(">>> ").strip()
     if choix == "0":
         return None
     return fichiers[int(choix) - 1]
@@ -345,31 +341,35 @@ def charger_jeu(save_data):
 def menu_principal():
     playsound("Button")
     print("""
-  ╔═══════════════════════════╗
-  ║  1)   Nouvelle partie     ║
-  ║  2)   Charger une partie  ║
-  ║  0)   Quitter le jeu      ║
-  ╚═══════════════════════════╝\n""")
+    ╔═══════════════════════════╗
+    ║  1)   Nouvelle partie     ║
+    ║  2)   Charger une partie  ║
+    ║  0)   Quitter le jeu      ║
+    ╚═══════════════════════════╝\n""")
     choix = -1
     while choix not in [0, 1, 2]:
-        choix = input().strip()
-        if choix == "1":
+        choix = int(input(">>> ").strip())
+        if choix == 1:
             profil = choisir_profil()
             save_defaut = creer_partie(profil)
             charger_jeu(save_defaut)
             return
 
-        elif choix == "2":
+        elif choix == 2:
             profil = choisir_profil()
             sauvegarde = choisir_sauvegarde(profil)
-            if sauvegarde:
+            if sauvegarde != None:
                 save_data = charger_json(profil, sauvegarde)
                 if save_data:
                     charger_jeu(save_data)
-            return
+                return
+            else:
+                choix = -1
+                wait(1)
 
-        elif choix == "0":
+        elif choix == 0:
             print("À bientôt !")
+            wait(1)
             exit()
   
 
