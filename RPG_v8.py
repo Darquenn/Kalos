@@ -5,6 +5,7 @@
 ### Imports ###
 ###############
 import os
+import platform
 import sys
 import json
 from datetime import datetime
@@ -46,11 +47,32 @@ couleurs_CMD = {
     "light_magenta": "D",
     "light_yellow": "E",
 }
+couleurs_ANSI = {
+    "black": "\033[30m",
+    "red": "\033[31m",
+    "green": "\033[32m",
+    "yellow": "\033[33m",
+    "blue": "\033[34m",
+    "magenta": "\033[35m",
+    "cyan": "\033[36m",
+    "white": "\033[37m",
+    "reset": "\033[0m"
+}
+
 code_couleur_CMD = couleurs_CMD.get(COULEUR.lower(), "7")
-os.system(f"color {code_couleur_CMD} && cls")
+code_couleur_ANSI = couleurs_ANSI.get(COULEUR.lower(), "\033[37m")
+if platform.system() == "Windows":
+    os.system(f"color {code_couleur_CMD} && cls")
+elif platform.system() == "Linux":
+    print(code_couleur_ANSI + "\033[2J\033[H")
 
 ### Sons ###
-pygame.mixer.init()
+try:
+    pygame.mixer.init()
+except pygame.error as e:
+    print(f"⚠ Erreur d'initialisation du mixer pygame : {e}")
+    print("  Les sons seront désactivés.")
+    SONS_ACTIVES = False
 sons = {}
 fichiers_sons = {
     "Titre": "title.ogg",
@@ -181,8 +203,14 @@ def dialogue(NomPNJ, text, attente=1):
     progprint(text, 2, voix=True)
     wait(attente)
 
-def cls():
-    os.system("cls")
+def cls(keep=False):
+    if platform.system() == "Windows":
+        os.system("cls")
+    elif platform.system() == "Linux":
+        if keep:
+            os.system("clear -x")
+        else:
+            os.system("clear")
 
 ### Paramétrage ###
 def parametrage():
