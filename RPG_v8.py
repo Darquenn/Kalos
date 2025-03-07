@@ -12,6 +12,9 @@ from datetime import datetime
 from time import sleep as wait
 from random import randint, choice
 from copy import deepcopy
+if platform.system() == "Linux":
+    os.environ['SDL_AUDIODRIVER'] = 'dummy'
+    sys.stderr = open(os.devnull, 'w')
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 try:
     import pygame
@@ -137,12 +140,13 @@ fichiers_sons = {
     "Mus_Village": "mus_village.ogg", # Version 8-bit de "Driftveil City" (Pokémon Noir et Blanc) par Hitomi Sato
 }
 
-for nom, directory in fichiers_sons.items():
-    try:
-        sons[nom] = pygame.mixer.Sound(f"sounds/{directory}")
-    except FileNotFoundError:
-        print(f"⚠ Fichier son introuvable : {directory}. Le son '{nom}' sera désactivé.")
-        sons[nom] = None
+if SONS_ACTIVES:
+    for nom, directory in fichiers_sons.items():
+        try:
+            sons[nom] = pygame.mixer.Sound(f"sounds/{directory}")
+        except FileNotFoundError:
+            print(f"⚠ Fichier son introuvable : {directory}. Le son '{nom}' sera désactivé.")
+            sons[nom] = None
 
 def playsound(nom, nb=0):
     if nb == 0:
@@ -176,7 +180,10 @@ def gras(text):
     return colored(text, attrs=["bold"])
 
 def colorer(text, couleur=COULEUR):
-    return colored(text, couleur)
+    if platform.system() == "Linux":
+        return f"{couleurs_ANSI.get(couleur.lower(), couleurs_ANSI['reset'])}{text}{couleurs_ANSI['reset']}"
+    else:
+        return colored(text, couleur)
 
 def progprint(text, multi=1, delai=0.01, progprint=PROGPRINT, voix=False, gras=False, couleur=None):
     if couleur is not None:
@@ -743,7 +750,7 @@ def combat(perso=PERSONNAGE, enn=None, inv=INVENTAIRE):
         elif action == 666:
             enn["PV"] -= 66666
             playsound("Demon")
-            progprint(f"\n𖤐  {NomPerso} invoque une force maléfique et inflige des dégâts dévastateurs à {NomEnn} !")
+            progprint(f"\n⛤  {NomPerso} invoque une force maléfique et inflige des dégâts dévastateurs à {NomEnn} !")
             wait(1)
 
         ### Fuite ###
@@ -1073,19 +1080,19 @@ def afficher_stats(perso=PERSONNAGE):
 
 def afficher_inventaire(inv=INVENTAIRE):
     progprint("\n═════════ Inventaire ═════════", gras=True)
-    progprint("Équipement :",2)
+    progprint(gras("Équipement :"), 2)
     for item, details in inv["Équipement"].items():
         if details["Quantité"] == -1:
-            progprint(f"  - {item} : {details['Effet']}",2)
+            progprint(f"  - {item} : {details['Effet']}", 2)
         else:
-            progprint(f"  - {item} : {details['Effet']} (x{details['Quantité']})",2)
-    progprint("Objets :",2)
+            progprint(f"  - {item} : {details['Effet']} (x{details['Quantité']})", 2)
+    progprint(gras("Objets :"), 2)
     for objet, quantite in inv["Objets"].items():
         if quantite != 0:
             details = OBJETS[objet]
             effet = details["Effet"]
             progprint(f"  - {objet} : {effet} (x{quantite})", 2)
-    progprint(f"OR : {inv['OR']}",2)
+    progprint(f"OR : {inv['OR']}", 2, gras=True)
     progprint("══════════════════════════════\n", gras=True)
 
 def afficher_barre(type="PV", perso=PERSONNAGE, long_base=20, nom=True):
