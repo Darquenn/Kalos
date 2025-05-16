@@ -139,6 +139,8 @@ fichiers_sons = {
     "Mus_Foret": "mus_forest.ogg", # Version 8-bit de "Scarlet Forest" (Deltarune) par Toby Fox
     "Mus_Village": "mus_village.ogg", # Version 8-bit de "Driftveil City" (Pokémon Noir et Blanc) par Hitomi Sato
     "Mus_Boss": "mus_boss.ogg", # Version 8-bit de "Battle Against a True Hero" (Undertale) par Toby Fox
+    "Mus_Boutique": "mus_shop.ogg", # Version 8-bit de "Tem Shop" (Undertale) par Toby Fox
+    "Mus_Secret": "mus_secret.ogg", # Version 8-bit de "sans." (Undertale) par Toby Fox
 }
 
 if SONS_ACTIVES:
