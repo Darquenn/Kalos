@@ -167,8 +167,6 @@ def playsound(nom, nb=0):
 def playmusic(nom, loop=-1, stop=False, volume=0.5):
     if stop:
         pygame.mixer.music.stop()
-        if nom == "":
-            return
     if SONS_ACTIVES and f"Mus_{nom}" in fichiers_sons:
         directory = f"sounds/{fichiers_sons[f'Mus_{nom}']}"
         if pygame.mixer.music.get_busy() and pygame.mixer.music.get_pos() > 0:
@@ -178,6 +176,9 @@ def playmusic(nom, loop=-1, stop=False, volume=0.5):
         pygame.mixer.music.set_volume(volume)
     elif not fichiers_sons.get(f"Mus_{nom}"):
         print(f"⚠ Musique '{nom}' introuvable ou désactivée.")
+
+def stopmusic():
+    pygame.mixer.music.stop()
 
 ### Affichage ###
 def gras(text):
@@ -287,6 +288,15 @@ def choisir_profil():
     return f"Profil{choix}"
 
 def creer_partie(profil):
+    dossier = f"saves/{profil}"
+    if os.path.exists(dossier) and os.listdir(dossier):
+        playsound("Alerte")
+        progprint(f"⚠ Attention : des sauvegardes existent déjà pour {profil}.", 2)
+        confirmation = input("Voulez-vous vraiment créer une nouvelle partie ? (Oui/Non) : ").strip().lower()
+        if not confirmation.startswith("o"):
+            progprint("Création annulée.", 2)
+            wait(1)
+            return
     nom_perso = input("Comment s'appelle ton personnage ? ").strip()
     if not nom_perso:
         nom_perso = "Darawen"
@@ -379,6 +389,9 @@ def menu_principal():
         if choix == 1:
             profil = choisir_profil()
             save_defaut = creer_partie(profil)
+            if save_defaut == None:
+                choix = -1
+                continue
             charger_jeu(save_defaut)
             return
 
@@ -560,7 +573,7 @@ ENNEMIS = {
     }
 }
 
-PRENOMS = ["Alaric", "Balthar", "Cedric", "Darael", "Elowen", "Faelar", "Gwendal", "Havren", "Iriel", "Jorvik", "Temmie"]
+PRENOMS = ["Alaric", "Balthar", "Cedric", "Darael", "Elowen", "Faelar", "Gwendal", "Havren", "Iriel", "Jorvik", "Korrigan", "Ulric", "Vesper", "Temmie"]
 
 PNJS = {
     "Aubergiste": {
@@ -574,7 +587,7 @@ PNJS = {
         "Objets": {
             "Potion de soin": 10,
             "Potion d'énergie": 10,
-            "Poudre enchantée": 10,
+            "Poudre enchantée": 5,
             "Fléchette": 10,
         },
         "Equipement": {
@@ -915,7 +928,7 @@ def combat(perso=PERSONNAGE, enn=None, inv=INVENTAIRE):
     print()
 
 
-### Fonctions de déplacement ###
+### Fonctions d'actions ###
 def balade(perso=PERSONNAGE, cout_EN=3, continuer=True):
     NomPerso = perso["Nom"]
     cout_EN_initial = cout_EN
@@ -1003,7 +1016,134 @@ def balade(perso=PERSONNAGE, cout_EN=3, continuer=True):
         continuer = input("Continuer à se balader ? (Oui/Non) : ").lower().strip().startswith("o")
     playmusic("Foret", stop=True)
 
-### Fonctions autres ###
+def dormir(perso=PERSONNAGE, type_chambre="dehors", dérangé=False, inv=INVENTAIRE):
+    NomPerso = perso["Nom"]
+    recup_EN = 0
+    recup_PV = 0
+    if type_chambre == "dehors":
+        recup_EN = 5
+        progprint(f"{NomPerso} s'endort craintivement...", 5)
+        wait(1)
+    elif type_chambre == "normale" or type_chambre == "campement":
+        recup_EN = 10
+        progprint(f"{NomPerso} s'endort tranquillement...", 5)
+        wait(1)
+    elif type_chambre == "royale":
+        recup_EN = 20
+        recup_PV = 50
+        progprint(f"{NomPerso} s'endort paisiblement...", 5)
+        wait(1)
+    if dérangé:
+        recup_EN //= 2
+        recup_PV //= 2
+    perso["EN"] = min(perso["EN"] + recup_EN, perso["EN_MAX"])
+    if recup_PV > 0:
+        perso["PV"] = min(perso["PV"] + recup_PV, perso["PV_MAX"])
+    if not dérangé:
+        progprint("ᶻ 𝘇𐰁", 50)
+        playsound("LevelUp2")
+        progprint(f"{NomPerso} s'est bien reposé et récupère {recup_EN} EN.", 2)
+        if recup_PV > 0:
+            progprint(f"{NomPerso} récupère aussi {recup_PV} PV !", 2)
+        wait(1)
+    else:
+        progprint("ᶻ 𝗓!", 50)
+        playsound("Alerte")
+        progprint(f"{NomPerso} se réveille brusquement ! (+{recup_EN} EN)", 2)
+    print(afficher_barre('EN', perso))
+    if recup_PV > 0:
+        print(afficher_barre('PV', perso))
+
+### Fonctions d'affichage ###
+def afficher_stats(perso=PERSONNAGE):
+    NomPerso = perso['Nom']
+    LVL = perso['LVL']
+    EXP = afficher_barre('EXP', nom=False)
+    PV = afficher_barre('PV', nom=False)
+    EN = afficher_barre('EN', nom=False)
+    ATT = perso['ATT']
+    DEF = perso['DEF']
+    Chance = perso['Chance']
+    longueur = max(44, (len(NomPerso) + 41))
+    progprint(f"╔═════════{((longueur - 44) // 2) * '═'} Statistiques de {NomPerso} {((longueur - 44) // 2) * '═'}════════╗", 0.001, gras=True)
+    progprint(f"║ ✱  LVL {LVL} {(longueur - len(str(LVL)) - 12) * ' '} ║", 2, gras=True)
+    progprint(f"║ ✱  EXP {EXP} {(longueur - len(str(EXP)) + 5) * ' '} {gras('║')}", 2, gras=True)
+    progprint(f"║ ✱  PV {PV} {(longueur - len(str(PV)) + 6) * ' '} {gras('║')}", 2, gras=True)
+    progprint(f"║ ✱  EN {EN} {(longueur - len(str(EN)) + 6) * ' '} {gras('║')}", 2, gras=True)
+    progprint(f"║ ✱  ATT {ATT} {(longueur - len(str(ATT)) - 12) * ' '} ║", 2, gras=True)
+    progprint(f"║ ✱  DEF {DEF} {(longueur - len(str(DEF)) - 12) * ' '} ║", 2, gras=True)
+    progprint(f"║ ✱  Chance {Chance} {(longueur - len(str(Chance)) - 15) * ' '} ║", 2, gras=True)
+    progprint(f"╚{(longueur - 2) * '═'}╝", 0.001, gras=True)
+
+def afficher_inventaire(inv=INVENTAIRE):
+    progprint("\n═════════ Inventaire ═════════", gras=True)
+    progprint(gras("Équipement :"), 2)
+    for item, quantite in inv["Équipement"].items():
+        details = EQUIPEMENT.get(item, {})
+        effet = details.get("Effet", "Effet inconnu")
+        if quantite == -1:
+            progprint(f"  - {item} : {effet}", 2)
+        else:
+            progprint(f"  - {item} : {effet} (x{quantite})", 2)
+    progprint(gras("Objets :"), 2)
+    for objet, quantite in inv["Objets"].items():
+        if quantite != 0:
+            details = OBJETS.get(objet, {})
+            effet = details.get("Effet", "Effet inconnu")
+            progprint(f"  - {objet} : {effet} (x{quantite})", 2)
+    progprint(f"OR : {inv['OR']}", 2, gras=True)
+    progprint("══════════════════════════════\n", gras=True)
+
+def afficher_barre(type="PV", perso=PERSONNAGE, long_base=20, nom=True):
+    stat = perso[type]
+    stat_MAX = perso[f"{type}_MAX"]
+    long = max(long_base, stat_MAX // 5)
+    prop = max(0, min(1, stat / stat_MAX))
+    rempli = int(prop * long)
+    couleurs = {
+        "PV": 'green',
+        "EN": 'cyan',
+        "EXP": 'yellow',
+        None: 'white',
+    }
+    NomPerso = perso["Nom"].upper()
+    carac = ["\u2588", "\u2591"] # ["░", "█"]
+    barre = f"{colorer(f'[{carac[0] * rempli}{carac[1] * (long - rempli)}]', couleurs[type])} {int(stat)}/{stat_MAX}"
+    if nom:
+        return gras(f"{NomPerso} : {barre} {type}")
+    else:
+        return gras(f"{barre} {type}")
+
+def choisir_actions(actions, titre=None, retour=None, cheatcode=False):
+    choix = -1
+    actions_dict = {i + 1: action for i, action in enumerate(actions)}
+    if retour:
+        actions_dict[0] = retour
+    if titre:
+        long_totale = 20
+        marge = (long_totale - len(titre)) // 2
+        séparateurs = "═" * marge
+        progprint(f"{séparateurs} {titre} {séparateurs}", 0.001, gras=True)
+    while choix not in actions_dict:
+        for i, action in actions_dict.items():
+            if i == 0:
+                progprint(f"◄ {i}) {action}", 0.05)
+            else:
+                progprint(f"  {i}) {action}", 0.05)
+        choix = input("Ton choix : ")
+        if choix.isdigit():
+            choix = int(choix)
+            if cheatcode and choix == cheatcode:
+                return choix
+        else:
+            playsound("Chip")
+            print("## Entre un chiffre valide ##")
+            choix = -1
+        print()
+        wait(0.5)
+    return choix
+
+### Fonctions d'objets ###
 def obtenir_details_objet(NomObjet):
     objet = OBJETS.get(NomObjet, {
         "Description": ("Objet inconnu", "Effet inconnu."),
@@ -1196,94 +1336,7 @@ def vendre_objet(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
         choix = choisir_actions(actions, "Vendre", "Revenir")
     dialogue(NomMarch, f"Merci pour vos ventes !", 0)
 
-def afficher_stats(perso=PERSONNAGE):
-    NomPerso = perso['Nom']
-    LVL = perso['LVL']
-    EXP = afficher_barre('EXP', nom=False)
-    PV = afficher_barre('PV', nom=False)
-    EN = afficher_barre('EN', nom=False)
-    ATT = perso['ATT']
-    DEF = perso['DEF']
-    Chance = perso['Chance']
-    longueur = max(44, (len(NomPerso) + 41))
-    progprint(f"╔═════════{((longueur - 44) // 2) * '═'} Statistiques de {NomPerso} {((longueur - 44) // 2) * '═'}════════╗", 0.001, gras=True)
-    progprint(f"║ ✱  LVL {LVL} {(longueur - len(str(LVL)) - 12) * ' '} ║", 2, gras=True)
-    progprint(f"║ ✱  EXP {EXP} {(longueur - len(str(EXP)) + 5) * ' '} {gras('║')}", 2, gras=True)
-    progprint(f"║ ✱  PV {PV} {(longueur - len(str(PV)) + 6) * ' '} {gras('║')}", 2, gras=True)
-    progprint(f"║ ✱  EN {EN} {(longueur - len(str(EN)) + 6) * ' '} {gras('║')}", 2, gras=True)
-    progprint(f"║ ✱  ATT {ATT} {(longueur - len(str(ATT)) - 12) * ' '} ║", 2, gras=True)
-    progprint(f"║ ✱  DEF {DEF} {(longueur - len(str(DEF)) - 12) * ' '} ║", 2, gras=True)
-    progprint(f"║ ✱  Chance {Chance} {(longueur - len(str(Chance)) - 15) * ' '} ║", 2, gras=True)
-    progprint(f"╚{(longueur - 2) * '═'}╝", 0.001, gras=True)
-
-def afficher_inventaire(inv=INVENTAIRE):
-    progprint("\n═════════ Inventaire ═════════", gras=True)
-    progprint(gras("Équipement :"), 2)
-    for item, quantite in inv["Équipement"].items():
-        details = EQUIPEMENT.get(item, {})
-        effet = details.get("Effet", "Effet inconnu")
-        if quantite == -1:
-            progprint(f"  - {item} : {effet}", 2)
-        else:
-            progprint(f"  - {item} : {effet} (x{quantite})", 2)
-    progprint(gras("Objets :"), 2)
-    for objet, quantite in inv["Objets"].items():
-        if quantite != 0:
-            details = OBJETS.get(objet, {})
-            effet = details.get("Effet", "Effet inconnu")
-            progprint(f"  - {objet} : {effet} (x{quantite})", 2)
-    progprint(f"OR : {inv['OR']}", 2, gras=True)
-    progprint("══════════════════════════════\n", gras=True)
-
-def afficher_barre(type="PV", perso=PERSONNAGE, long_base=20, nom=True):
-    stat = perso[type]
-    stat_MAX = perso[f"{type}_MAX"]
-    long = max(long_base, stat_MAX // 5)
-    prop = max(0, min(1, stat / stat_MAX))
-    rempli = int(prop * long)
-    couleurs = {
-        "PV": 'green',
-        "EN": 'cyan',
-        "EXP": 'yellow',
-        None: 'white',
-    }
-    NomPerso = perso["Nom"].upper()
-    carac = ["\u2588", "\u2591"] # ["░", "█"]
-    barre = f"{colorer(f'[{carac[0] * rempli}{carac[1] * (long - rempli)}]', couleurs[type])} {int(stat)}/{stat_MAX}"
-    if nom:
-        return gras(f"{NomPerso} : {barre} {type}")
-    else:
-        return gras(f"{barre} {type}")
-
-def choisir_actions(actions, titre=None, retour=None, cheatcode=False):
-    choix = -1
-    actions_dict = {i + 1: action for i, action in enumerate(actions)}
-    if retour:
-        actions_dict[0] = retour
-    if titre:
-        long_totale = 20
-        marge = (long_totale - len(titre)) // 2
-        séparateurs = "═" * marge
-        progprint(f"{séparateurs} {titre} {séparateurs}", 0.001, gras=True)
-    while choix not in actions_dict:
-        for i, action in actions_dict.items():
-            if i == 0:
-                progprint(f"◄ {i}) {action}", 0.05)
-            else:
-                progprint(f"  {i}) {action}", 0.05)
-        choix = input("Ton choix : ")
-        if choix.isdigit():
-            choix = int(choix)
-            if cheatcode and choix == cheatcode:
-                return choix
-        else:
-            playsound("Chip")
-            print("## Entre un chiffre valide ##")
-            choix = -1
-        print()
-        wait(0.5)
-    return choix
-
+### Fonctions de statistiques ###
 def verifier_niveau(perso=PERSONNAGE):
     while perso["EXP"] >= perso["EXP_MAX"]:
         perso["EXP"] -= perso["EXP_MAX"]
@@ -1333,6 +1386,7 @@ def appliquer_equipement(perso, nom_equip, quantite=1):
     elif effet.startswith("+") and "DEF" in effet:
         perso["DEF"] += equip["Valeur"] * quantite
 
+### Fonctions de quêtes ###
 def donner_quete(quete=None, NomDonneur=None, perso=PERSONNAGE):
     NomPerso = perso["Nom"]
     if quete is None:
@@ -1393,34 +1447,7 @@ def terminer_quete(quete=None, perso=PERSONNAGE, inv=INVENTAIRE):
     wait(1)
     verifier_niveau()
 
-def dormir(perso=PERSONNAGE, type_chambre="dehors", dérangé=False, inv=INVENTAIRE):
-    NomPerso = perso["Nom"]
-    if type_chambre == "dehors":
-        recup = 5
-        progprint(f"{NomPerso} s'endort craintivement...", 5)
-        wait(1)
-    elif type_chambre == "normale" or type_chambre == "campement":
-        recup = 10
-        progprint(f"{NomPerso} s'endort tranquillement...", 5)
-        wait(1)
-    elif type_chambre == "royale":
-        recup = 20
-        progprint(f"{NomPerso} s'endort paisiblement...", 5)
-        wait(1)
-    if dérangé:
-        recup //= 2
-    perso["EN"] = min(perso["EN"] + recup, perso["EN_MAX"])
-    if not dérangé:
-        progprint("ᶻ 𝘇𐰁", 50)
-        playsound("LevelUp2")
-        progprint(f"{NomPerso} s'est bien reposé et récupère {recup} EN.")
-        wait(1)
-    else:
-        progprint("ᶻ 𝗓!", 50)
-        playsound("Alerte")
-        progprint(f"{NomPerso} se réveille brusquement ! (+{recup} EN)")
-    print(afficher_barre('EN', perso))
-    
+### Fonctions autres ###
 def choisir_prenom(pnj, prenoms=PRENOMS):
     prenom = choice(prenoms)
     prenoms.remove(prenom)
@@ -1472,7 +1499,7 @@ def village(perso=PERSONNAGE, inv=INVENTAIRE):
         playsound("Awh")
         progprint(f"{NomPerso} devrait rester un peu au village pour se reposer...")
     else:
-        playmusic("", stop=True)
+        stopmusic()
         playsound("Fuite")
         progprint(f"{NomPerso} quitte le village.", 2)
     wait(1)
@@ -1548,10 +1575,10 @@ def auberge(perso=PERSONNAGE, inv=INVENTAIRE):
     progprint(f"{NomPerso} entre dans l'auberge.", 2)
     wait(1)
     NomAuberg = PNJS["Aubergiste"]["Nom"].capitalize()
-    dialogue(NomAuberg, f"Bienvenue à l'auberge, {NomPerso} ! Je suis {NomAuberg} l'Aubergiste.")
-    dialogue(NomAuberg, "Nous avons deux types de chambres disponibles.")
-    dialogue(NomAuberg, "Une chambre normale pour 10 pièces d'OR qui vous offre un sommeil réparateur.")
-    dialogue(NomAuberg, "Ou une chambre royale pour 20 pièces d'OR qui vous offre un sommeil divin.")
+    dialogue(NomAuberg, f"Bienvenue à l'auberge, {NomPerso} ! Je suis {NomAuberg} l'Aubergiste.", attente=0.75)
+    dialogue(NomAuberg, "Nous avons deux types de chambres disponibles.", attente=0.75)
+    dialogue(NomAuberg, "Une chambre normale pour 10 pièces d'OR qui vous offre un sommeil réparateur.", attente=0.75)
+    dialogue(NomAuberg, "Ou une chambre royale pour 20 pièces d'OR qui vous offre un sommeil divin.", attente=0.75)
     actions = ["Chambre normale - (10 OR)", "Chambre royale - (20 OR)"]
     choix = choisir_actions(actions, "Auberge", "Revenir au village")
     
@@ -1559,29 +1586,20 @@ def auberge(perso=PERSONNAGE, inv=INVENTAIRE):
     if choix == 1:
         if inv["OR"] >= 10:
             inv["OR"] -= 10
-            progprint(f"  {NomPerso} se repose dans une chambre normale.", 2)
-            progprint(f"❤ {NomPerso} récupère tous ses PVs.", 2)
-            perso["PV"] = perso["PV_MAX"]
-            playsound("Potion")
-            print(afficher_barre('PV'))
+            dormir(perso, type_chambre="normale")
         else:
             playsound("Chip")
             dialogue(NomAuberg, f"Désolé {NomPerso} ! Je ne fais pas de crédit. Reviens quand tu es un peu, hmmmmmmm, plus riche !")
-    
+
     ### Chambre royale ###
     elif choix == 2:
         if inv["OR"] >= 20:
             inv["OR"] -= 20
-            progprint(f"  {NomPerso} se repose dans une chambre royale.",2)
-            progprint(f"❤ {NomPerso} récupère tous ses PVs et gagne 10 PV MAX temporaires !", 2)
-            perso["BONUS"]["PV_MAX"] = 10
-            perso["PV"] = calculer_bonus(perso, "PV_MAX")
-            playsound("Potion")
-            print(afficher_barre('PV'))
+            dormir(perso, type_chambre="royale")
         else:
             playsound("Chip")
             dialogue(NomAuberg, f"Désolé {NomPerso} ! Je ne fais pas de crédit. Reviens quand tu es un peu, hmmmmmmm, plus riche !")
-    
+
     ### Quitter ###
     elif choix == 0:
         dialogue(NomAuberg, "Au revoir et à bientôt !", 0)
@@ -1673,9 +1691,11 @@ def execution():
     for i in range(100):
         village()
         balade()
-    print("Normalement, ce message ne devrait pas s'afficher.")
-    wait(1)
-    print("Mais si vous le voyez, c'est que vous avez vraiment forcé")
+    print("(・―・) Normalement, ce message ne devrait pas s'afficher")
+    wait(3)
+    print("(ㆆ_ㆆ) Mais si vous le voyez, c'est que vous avez vraiment forcé")
+    wait(2)
+    exit()
 
 
 execution()
