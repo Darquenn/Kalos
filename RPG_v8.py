@@ -544,7 +544,7 @@ ENNEMIS = {
     }
 }
 
-PRENOMS = ["Alaric", "Balthar", "Cedric", "Darael", "Elowen", "Faelar", "Gwendal", "Havren", "Iriel", "Jorvik"]
+PRENOMS = ["Alaric", "Balthar", "Cedric", "Darael", "Elowen", "Faelar", "Gwendal", "Havren", "Iriel", "Jorvik", "Temmie"]
 
 PNJS = {
     "Aubergiste": {
@@ -598,6 +598,7 @@ QUETES = {
             },
             "Statut": -1,
             "Type": "Tuer",
+            "Difficulté": 1,
             "Cible": "Slimy",
             "Donneur": "Maire"
         },
@@ -608,12 +609,29 @@ QUETES = {
             "Récompenses": {
                 "EXP": 40,
                 "Objets": [
+                    ["Fléchette", 1],
+                ]
+            },
+            "Statut": -1,
+            "Type": "Tuer",
+            "Difficulté": 2,
+            "Cible": "Gobelin",
+            "Donneur": "Maire"
+        },
+        "Squelette": {
+            "Nom": "Extermination des Squelettes",
+            "Description": "Les Squelettes envahissent la forêt voisine et menacent les récoltes des villageois.",
+            "Objectif": "Tuer 3 Squelette",
+            "Récompenses": {
+                "EXP": 60,
+                "Objets": [
                     ["Potion d'énergie", 1],
                 ]
             },
             "Statut": -1,
             "Type": "Tuer",
-            "Cible": "Gobelin",
+            "Difficulté": 3,
+            "Cible": "Squelette",
             "Donneur": "Maire"
         },
     }
@@ -1314,6 +1332,10 @@ def village(perso=PERSONNAGE, inv=INVENTAIRE):
             wait(1)
             afficher_inventaire(inv)
             wait(1)
+        
+        ### Sauvegarder
+        elif choix == 6:
+            sauvegarder_json()
             
         choix = choisir_actions(actions, "Village", "Quitter le village")
     
@@ -1333,7 +1355,21 @@ def mairie(perso=PERSONNAGE, inv=INVENTAIRE):
     progprint(f"{NomPerso} entre dans la mairie.", 2)
     wait(1)
     NomMaire = PNJS["Maire"]["Nom"].capitalize()
-    quete = QUETES["Secondaires"]["Slimy"]
+    playmusic("Secret", stop=True)
+    # Sélection de la quête adaptée
+    quetes = list(QUETES["Secondaires"].values())
+    quete = None
+    for q in quetes:
+        if q.get("Difficulté") == perso["LVL"]:
+            quete = q
+    if quete is None:
+        dialogue(NomMaire, f"Ah, {NomPerso}... Tu veux une quête ? Désolé, j'ai rien à ton niveau. Reviens plus tard, hein !")
+        playsound("Gobelin_Rire")
+        progprint(f"{NomPerso} se sent légèrement humilié...\n", 2)
+        playsound("Fuite")
+        progprint(f"{NomPerso} sort de la mairie.\n", 2)
+        return
+    
     if quete["Cible"] in perso["Quêtes"]:
         if quete["Statut"] >= 0 and quete["Statut"] < int(quete["Objectif"].split()[1]):
             dialogue(NomMaire, f"Qu'est-ce que vous attendez pour finir la quête ? Allez-y !")
@@ -1361,6 +1397,8 @@ def boutique(perso=PERSONNAGE, inv=INVENTAIRE):
     progprint(f"{NomPerso} entre dans la boutique.", 2)
     wait(1)
     NomMarch = PNJS["Marchand"]["Nom"].capitalize()
+    if NomMarch == "TEMMIE": # Easter egg
+        playmusic("Boutique", stop=True)
     dialogue(NomMarch, f"Bienvenue à la boutique, {NomPerso} ! Je suis {NomMarch} le Marchand.")
     dialogue(NomMarch, f"Voici les objets que j'ai en stock.")
     print()
@@ -1378,6 +1416,7 @@ def boutique(perso=PERSONNAGE, inv=INVENTAIRE):
             progprint(f"OR restant : {inv['OR']} OR", 2)
         choix = choisir_actions(actions, "Boutique", "Revenir au village")
     dialogue(NomMarch, f"Merci et au revoir !", 0)
+    playmusic("Boutique", stop=True)
     playsound("Fuite")
     progprint(f"{NomPerso} sort de la boutique.\n", 2)
         
