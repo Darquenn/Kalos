@@ -310,34 +310,16 @@ def creer_partie(profil):
             "Quêtes": []
         },
         "INVENTAIRE": {
-            "Équipement": {
-                "Épée en bois": {
-                    "Quantité": -1,
-                    "Description": ("C'est juste un bâton.", "Octroie 1 ATT."),
-                    "Effet": "+1 ATT",
-                    "Type": "Arme",
-                    "Valeur": 1,
-                    "Symbole": "⚔",
-                    "Rareté": "Commun",
-                    "Prix": 5
-                },
-                "Tunique de noob": {
-                    "Quantité": -1,
-                    "Description": ("L'armure la plus pourrie.", "Octroie 1 DEF."),
-                    "Effet": "+1 DEF",
-                    "Type": "Armure",
-                    "Valeur": 1,
-                    "Symbole": "🛡",
-                    "Rareté": "Commun",
-                    "Prix": 5
-                },
-            },
-            "Objets": {
-                "Potion de soin": 2,
-                "Potion d'énergie": 2,
-                "Fléchette": 1,
-            },
-            "OR": 100
+        "Équipement": {
+            "Épée en bois": 1,
+            "Tunique de noob": 1,
+        },
+        "Objets": {
+            "Potion de soin": 2,
+            "Potion d'énergie": 2,
+            "Fléchette": 1,
+        },
+        "OR": 100
         }
     }
     wait(1)
@@ -1102,16 +1084,18 @@ def afficher_stats(perso=PERSONNAGE):
 def afficher_inventaire(inv=INVENTAIRE):
     progprint("\n═════════ Inventaire ═════════", gras=True)
     progprint(gras("Équipement :"), 2)
-    for item, details in inv["Équipement"].items():
-        if details["Quantité"] == -1:
-            progprint(f"  - {item} : {details['Effet']}", 2)
+    for item, quantite in inv["Équipement"].items():
+        details = EQUIPEMENT.get(item, {})
+        effet = details.get("Effet", "Effet inconnu")
+        if quantite == -1:
+            progprint(f"  - {item} : {effet}", 2)
         else:
-            progprint(f"  - {item} : {details['Effet']} (x{details['Quantité']})", 2)
+            progprint(f"  - {item} : {effet} (x{quantite})", 2)
     progprint(gras("Objets :"), 2)
     for objet, quantite in inv["Objets"].items():
         if quantite != 0:
-            details = OBJETS[objet]
-            effet = details["Effet"]
+            details = OBJETS.get(objet, {})
+            effet = details.get("Effet", "Effet inconnu")
             progprint(f"  - {objet} : {effet} (x{quantite})", 2)
     progprint(f"OR : {inv['OR']}", 2, gras=True)
     progprint("══════════════════════════════\n", gras=True)
