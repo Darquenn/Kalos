@@ -319,7 +319,7 @@ def creer_partie(profil):
             "Potion d'énergie": 2,
             "Fléchette": 1,
         },
-        "OR": 100
+        "OR": 10000
         }
     }
     wait(1)
@@ -424,7 +424,7 @@ INVENTAIRE = {
         "Potion d'énergie": 2,
         "Fléchette": 1,
     },
-    "OR": 100
+    "OR": 10000
 }
 
 EQUIPEMENT = {
@@ -437,7 +437,7 @@ EQUIPEMENT = {
             "Rareté": "Commun",
             "Prix": 5
         },
-        "Tunique de noob": {
+    "Tunique de noob": {
             "Description": ("L'armure la plus pourrie.", "Octroie 1 DEF."),
             "Effet": "+1 DEF",
             "Type": "Armure",
@@ -445,6 +445,33 @@ EQUIPEMENT = {
             "Symbole": "🛡",
             "Rareté": "Commun",
             "Prix": 5
+        },
+    "Épée en fer": {
+            "Description": ("Une épée en fer rouillée.", "Octroie 5 ATT."),
+            "Effet": "+5 ATT",
+            "Type": "Arme",
+            "Valeur": 5,
+            "Symbole": "⚔",
+            "Rareté": "Peu commun",
+            "Prix": 50
+        },
+    "Armure en fer": {
+            "Description": ("Une armure en fer rouillée.", "Octroie 5 DEF."),
+            "Effet": "+5 DEF",
+            "Type": "Armure",
+            "Valeur": 5,
+            "Symbole": "🛡",
+            "Rareté": "Peu commun",
+            "Prix": 50
+        },
+    "Épée légendaire": {
+            "Description": ("Une épée magique et puissante.", "Octroie 10 ATT."),
+            "Effet": "+10 ATT",
+            "Type": "Arme",
+            "Valeur": 10,
+            "Symbole": "⚔",
+            "Rareté": "Légendaire",
+            "Prix": 1000
         },
 }
 
@@ -1187,7 +1214,17 @@ def reinitialiser_bonus(perso, stats=None):
         if stat in perso["BONUS"]:
             perso["BONUS"][stat] = 0
     progprint(f"{perso['Nom']} ressent une rechute d'énergie.", 2)
-    
+
+def appliquer_equipement(perso, nom_equip, quantite=1):
+    equip = EQUIPEMENT.get(nom_equip)
+    if not equip:
+        return
+    effet = equip.get("Effet", "")
+    if effet.startswith("+") and "ATT" in effet:
+        perso["ATT"] += equip["Valeur"] * quantite
+    elif effet.startswith("+") and "DEF" in effet:
+        perso["DEF"] += equip["Valeur"] * quantite
+
 def donner_quete(quete=None, NomDonneur=None, perso=PERSONNAGE):
     NomPerso = perso["Nom"]
     if quete is None:
@@ -1381,23 +1418,47 @@ def boutique(perso=PERSONNAGE, inv=INVENTAIRE):
     progprint(f"{NomPerso} entre dans la boutique.", 2)
     wait(1)
     NomMarch = PNJS["Marchand"]["Nom"].capitalize()
-    if NomMarch == "TEMMIE": # Easter egg
+    if NomMarch == "TEMMIE":  # Easter egg
         playmusic("Boutique", stop=True)
     dialogue(NomMarch, f"Bienvenue à la boutique, {NomPerso} ! Je suis {NomMarch} le Marchand.")
-    dialogue(NomMarch, f"Voici les objets que j'ai en stock.")
+    dialogue(NomMarch, f"Voici ce que j'ai en stock.")
     print()
+
     objets_dispos = []
     for objet in PNJS["Marchand"]["Objets"]:
         prix = OBJETS[objet]["Prix"]
-        objets_dispos.append((objet, prix))
+        objets_dispos.append(("objet", objet, prix))
+    for equip in EQUIPEMENT:
+        prix = EQUIPEMENT[equip]["Prix"]
+        objets_dispos.append(("equipement", equip, prix))
+
     actions = []
-    for objet, prix in objets_dispos:
-        actions.append(f"{objet} - {prix} OR")
+    for typ, nom, prix in objets_dispos:
+        if typ == "objet":
+            actions.append(f"{nom} (Objet) - {prix} OR")
+        else:
+            actions.append(f"{nom} (Équipement) - {prix} OR")
+
     choix = choisir_actions(actions, "Boutique", "Revenir au village")
     while choix != 0:
-        NomObjet = objets_dispos[choix - 1][0]
-        if acheter_objet(NomObjet):
-            progprint(f"OR restant : {inv['OR']} OR", 2)
+        typ, NomItem, prix = objets_dispos[choix - 1]
+        if typ == "objet":
+            if acheter_objet(NomItem):
+                progprint(f"OR restant : {inv['OR']} OR", 2)
+        else:  # Équipement
+            if inv["OR"] >= prix:
+                inv["OR"] -= prix
+                if NomItem in inv["Équipement"]:
+                    inv["Équipement"][NomItem] += 1
+                else:
+                    inv["Équipement"][NomItem] = 1
+                appliquer_equipement(perso, NomItem)
+                playsound("Pièce")
+                progprint(f"✓ {NomPerso} a acheté {NomItem} pour {prix} OR.", 2)
+                progprint(f"OR restant : {inv['OR']} OR", 2)
+            else:
+                playsound("Chip")
+                progprint(f"✘ {NomPerso} n'a pas assez d'or pour acheter {NomItem}.", 2)
         choix = choisir_actions(actions, "Boutique", "Revenir au village")
     dialogue(NomMarch, f"Merci et au revoir !", 0)
     playmusic("Boutique", stop=True)
@@ -1542,3 +1603,144 @@ def execution():
 
 
 execution()
+
+'''Acheter & vendre
+def acheter(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
+    NomPerso = perso["Nom"]
+    NomMarch = marchand["Nom"].capitalize()
+    dialogue(NomMarch, f"Voici ce que j'ai en stock.")
+    objets_dispos = []
+    for objet in marchand["Objets"]:
+        prix = OBJETS[objet]["Prix"]
+        stock = marchand["Objets"][objet]
+        objets_dispos.append(("objet", objet, prix, stock))
+    for equip in EQUIPEMENT:
+        prix = EQUIPEMENT[equip]["Prix"]
+        objets_dispos.append(("equipement", equip, prix, None))  # Équipement : stock illimité
+
+    actions = []
+    for typ, nom, prix, stock in objets_dispos:
+        stock_str = f" (x{stock})" if stock is not None else ""
+        if typ == "objet":
+            actions.append(f"{nom} (Objet){stock_str} - {prix} OR")
+        else:
+            actions.append(f"{nom} (Équipement) - {prix} OR")
+
+    choix = choisir_actions(actions, "Acheter", "Revenir")
+    while choix != 0:
+        typ, NomItem, prix, stock = objets_dispos[choix - 1]
+        if typ == "objet":
+            if stock is not None and stock <= 0:
+                playsound("Chip")
+                progprint(f"✘ {NomMarch} n'a plus de {NomItem} en stock.", 2)
+            elif inv["OR"] >= prix:
+                inv["OR"] -= prix
+                marchand["Objets"][NomItem] -= 1
+                if NomItem in inv["Objets"]:
+                    inv["Objets"][NomItem] += 1
+                else:
+                    inv["Objets"][NomItem] = 1
+                playsound("Pièce")
+                progprint(f"✓ {NomPerso} a acheté {NomItem} pour {prix} OR.", 2)
+                progprint(f"OR restant : {inv['OR']} OR", 2)
+            else:
+                playsound("Chip")
+                progprint(f"✘ {NomPerso} n'a pas assez d'or pour acheter {NomItem}.", 2)
+        else:  # Équipement
+            if inv["OR"] >= prix:
+                inv["OR"] -= prix
+                if NomItem in inv["Équipement"]:
+                    inv["Équipement"][NomItem] += 1
+                else:
+                    inv["Équipement"][NomItem] = 1
+                appliquer_equipement(perso, NomItem)
+                playsound("Pièce")
+                progprint(f"✓ {NomPerso} a acheté {NomItem} pour {prix} OR.", 2)
+                progprint(f"OR restant : {inv['OR']} OR", 2)
+            else:
+                playsound("Chip")
+                progprint(f"✘ {NomPerso} n'a pas assez d'or pour acheter {NomItem}.", 2)
+        choix = choisir_actions(actions, "Acheter", "Revenir")
+    dialogue(NomMarch, f"Merci pour vos achats !", 0)
+
+def vendre(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
+    NomPerso = perso["Nom"]
+    NomMarch = marchand["Nom"].capitalize()
+    dialogue(NomMarch, f"Que souhaitez-vous me vendre ?")
+    objets_dispos = []
+    for objet, quantite in inv["Objets"].items():
+        if quantite > 0:
+            prix = OBJETS[objet]["Prix"] // 2
+            stock_marchand = marchand["Objets"].get(objet, 0)
+            objets_dispos.append(("objet", objet, prix, quantite, stock_marchand))
+    for equip, quantite in inv["Équipement"].items():
+        if quantite > 0:
+            prix = EQUIPEMENT[equip]["Prix"] // 2
+            objets_dispos.append(("equipement", equip, prix, quantite, None))
+
+    if not objets_dispos:
+        progprint(f"{NomPerso} n'a rien à vendre.", 2)
+        return
+
+    actions = []
+    for typ, nom, prix, quantite, stock_marchand in objets_dispos:
+        actions.append(f"{nom} (x{quantite}) - {prix} OR")
+
+    choix = choisir_actions(actions, "Vendre", "Revenir")
+    while choix != 0:
+        typ, NomItem, prix, quantite, stock_marchand = objets_dispos[choix - 1]
+        if typ == "objet":
+            inv["Objets"][NomItem] -= 1
+            marchand["Objets"][NomItem] = marchand["Objets"].get(NomItem, 0) + 1
+            inv["OR"] += prix
+            playsound("Pièce")
+            progprint(f"✓ {NomPerso} a vendu {NomItem} pour {prix} OR.", 2)
+            progprint(f"OR total : {inv['OR']} OR", 2)
+        else:  # Équipement
+            inv["Équipement"][NomItem] -= 1
+            inv["OR"] += prix
+            playsound("Pièce")
+            progprint(f"✓ {NomPerso} a vendu {NomItem} pour {prix} OR.", 2)
+            progprint(f"OR total : {inv['OR']} OR", 2)
+        # Mettre à jour la liste après la vente
+        objets_dispos = []
+        for objet, quantite in inv["Objets"].items():
+            if quantite > 0:
+                prix = OBJETS[objet]["Prix"] // 2
+                stock_marchand = marchand["Objets"].get(objet, 0)
+                objets_dispos.append(("objet", objet, prix, quantite, stock_marchand))
+        for equip, quantite in inv["Équipement"].items():
+            if quantite > 0:
+                prix = EQUIPEMENT[equip]["Prix"] // 2
+                objets_dispos.append(("equipement", equip, prix, quantite, None))
+        if not objets_dispos:
+            progprint(f"{NomPerso} n'a plus rien à vendre.", 2)
+            break
+        actions = []
+        for typ, nom, prix, quantite, stock_marchand in objets_dispos:
+            actions.append(f"{nom} (x{quantite}) - {prix} OR")
+        choix = choisir_actions(actions, "Vendre", "Revenir")
+    dialogue(NomMarch, f"Merci pour vos ventes !", 0)
+
+def boutique(perso=PERSONNAGE, inv=INVENTAIRE):
+    NomPerso = perso["Nom"]
+    playsound("Fuite")
+    progprint(f"{NomPerso} entre dans la boutique.", 2)
+    wait(1)
+    NomMarch = PNJS["Marchand"]["Nom"].capitalize()
+    if NomMarch == "TEMMIE":  # Easter egg
+        playmusic("Boutique", stop=True)
+    dialogue(NomMarch, f"Bienvenue à la boutique, {NomPerso} ! Je suis {NomMarch} le Marchand.")
+    actions = ["Acheter", "Vendre"]
+    choix = choisir_actions(actions, "Boutique", "Revenir au village")
+    while choix != 0:
+        if choix == 1:
+            acheter(perso, inv)
+        elif choix == 2:
+            vendre(perso, inv)
+        choix = choisir_actions(actions, "Boutique", "Revenir au village")
+    dialogue(NomMarch, f"Merci et au revoir !", 0)
+    playmusic("Boutique", stop=True)
+    playsound("Fuite")
+    progprint(f"{NomPerso} sort de la boutique.\n", 2)
+'''
