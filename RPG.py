@@ -5,12 +5,16 @@
 ### Imports ###
 ###############
 import os
+import platform
 import sys
 import json
 from datetime import datetime
 from time import sleep as wait
 from random import randint, choice
 from copy import deepcopy
+if platform.system() == "Linux":
+    os.environ['SDL_AUDIODRIVER'] = 'dummy'
+    sys.stderr = open(os.devnull, 'w')
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 try:
     import pygame
@@ -46,11 +50,32 @@ couleurs_CMD = {
     "light_magenta": "D",
     "light_yellow": "E",
 }
+couleurs_ANSI = {
+    "black": "\033[30m",
+    "red": "\033[31m",
+    "green": "\033[32m",
+    "yellow": "\033[33m",
+    "blue": "\033[34m",
+    "magenta": "\033[35m",
+    "cyan": "\033[36m",
+    "white": "\033[37m",
+    "reset": "\033[0m"
+}
+
 code_couleur_CMD = couleurs_CMD.get(COULEUR.lower(), "7")
-os.system(f"color {code_couleur_CMD} && cls")
+code_couleur_ANSI = couleurs_ANSI.get(COULEUR.lower(), "\033[37m")
+if platform.system() == "Windows":
+    os.system(f"color {code_couleur_CMD} && cls")
+elif platform.system() == "Linux":
+    print(code_couleur_ANSI + "\033[2J\033[H")
 
 ### Sons ###
-pygame.mixer.init()
+try:
+    pygame.mixer.init()
+except pygame.error as e:
+    print(f"⚠ Erreur d'initialisation du mixer pygame : {e}")
+    print("  Les sons seront désactivés.")
+    SONS_ACTIVES = False
 sons = {}
 fichiers_sons = {
     "Titre": "title.ogg",
@@ -113,14 +138,18 @@ fichiers_sons = {
     "Mus_Combat": "mus_battle.ogg", # Version 8-bit de "Rude Buster" (Deltarune) par Toby Fox
     "Mus_Foret": "mus_forest.ogg", # Version 8-bit de "Scarlet Forest" (Deltarune) par Toby Fox
     "Mus_Village": "mus_village.ogg", # Version 8-bit de "Driftveil City" (Pokémon Noir et Blanc) par Hitomi Sato
+    "Mus_Boss": "mus_boss.ogg", # Version 8-bit de "Battle Against a True Hero" (Undertale) par Toby Fox
+    "Mus_Boutique": "mus_shop.ogg", # Version 8-bit de "Tem Shop" (Undertale) par Toby Fox
+    "Mus_Secret": "mus_secret.ogg", # Version 8-bit de "sans." (Undertale) par Toby Fox
 }
 
-for nom, directory in fichiers_sons.items():
-    try:
-        sons[nom] = pygame.mixer.Sound(f"sounds/{directory}")
-    except FileNotFoundError:
-        print(f"⚠ Fichier son introuvable : {directory}. Le son '{nom}' sera désactivé.")
-        sons[nom] = None
+if SONS_ACTIVES:
+    for nom, directory in fichiers_sons.items():
+        try:
+            sons[nom] = pygame.mixer.Sound(f"sounds/{directory}")
+        except FileNotFoundError:
+            print(f"⚠ Fichier son introuvable : {directory}. Le son '{nom}' sera désactivé.")
+            sons[nom] = None
 
 def playsound(nom, nb=0):
     if nb == 0:
@@ -154,7 +183,10 @@ def gras(text):
     return colored(text, attrs=["bold"])
 
 def colorer(text, couleur=COULEUR):
-    return colored(text, couleur)
+    if platform.system() == "Linux":
+        return f"{couleurs_ANSI.get(couleur.lower(), couleurs_ANSI['reset'])}{text}{couleurs_ANSI['reset']}"
+    else:
+        return colored(text, couleur)
 
 def progprint(text, multi=1, delai=0.01, progprint=PROGPRINT, voix=False, gras=False, couleur=None):
     if couleur is not None:
@@ -181,8 +213,14 @@ def dialogue(NomPNJ, text, attente=1):
     progprint(text, 2, voix=True)
     wait(attente)
 
-def cls():
-    os.system("cls")
+def cls(keep=False):
+    if platform.system() == "Windows":
+        os.system("cls")
+    elif platform.system() == "Linux":
+        if keep:
+            os.system("clear -x")
+        else:
+            os.system("clear")
 
 ### Paramétrage ###
 def parametrage():
@@ -268,34 +306,16 @@ def creer_partie(profil):
             "Quêtes": []
         },
         "INVENTAIRE": {
-            "Équipement": {
-                "Épée en bois": {
-                    "Quantité": -1,
-                    "Description": ("C'est juste un bâton.", "Octroie 1 ATT."),
-                    "Effet": "+1 ATT",
-                    "Type": "Arme",
-                    "Valeur": 1,
-                    "Symbole": "⚔",
-                    "Rareté": "Commun",
-                    "Prix": 5
-                },
-                "Tunique de noob": {
-                    "Quantité": -1,
-                    "Description": ("L'armure la plus pourrie.", "Octroie 1 DEF."),
-                    "Effet": "+1 DEF",
-                    "Type": "Armure",
-                    "Valeur": 1,
-                    "Symbole": "🛡",
-                    "Rareté": "Commun",
-                    "Prix": 5
-                },
-            },
-            "Objets": {
-                "Potion de soin": 2,
-                "Potion d'énergie": 2,
-                "Fléchette": 1,
-            },
-            "OR": 100
+        "Équipement": {
+            "Épée en bois": 1,
+            "Tunique de noob": 1,
+        },
+        "Objets": {
+            "Potion de soin": 2,
+            "Potion d'énergie": 2,
+            "Fléchette": 1,
+        },
+        "OR": 10000
         }
     }
     wait(1)
@@ -404,7 +424,7 @@ INVENTAIRE = {
         "Potion d'énergie": 2,
         "Fléchette": 1,
     },
-    "OR": 100
+    "OR": 10000
 }
 
 EQUIPEMENT = {
@@ -417,7 +437,7 @@ EQUIPEMENT = {
             "Rareté": "Commun",
             "Prix": 5
         },
-        "Tunique de noob": {
+    "Tunique de noob": {
             "Description": ("L'armure la plus pourrie.", "Octroie 1 DEF."),
             "Effet": "+1 DEF",
             "Type": "Armure",
@@ -425,6 +445,33 @@ EQUIPEMENT = {
             "Symbole": "🛡",
             "Rareté": "Commun",
             "Prix": 5
+        },
+    "Épée en fer": {
+            "Description": ("Une épée en fer rouillée.", "Octroie 5 ATT."),
+            "Effet": "+5 ATT",
+            "Type": "Arme",
+            "Valeur": 5,
+            "Symbole": "⚔",
+            "Rareté": "Peu commun",
+            "Prix": 50
+        },
+    "Armure en fer": {
+            "Description": ("Une armure en fer rouillée.", "Octroie 5 DEF."),
+            "Effet": "+5 DEF",
+            "Type": "Armure",
+            "Valeur": 5,
+            "Symbole": "🛡",
+            "Rareté": "Peu commun",
+            "Prix": 50
+        },
+    "Épée légendaire": {
+            "Description": ("Une épée magique et puissante.", "Octroie 10 ATT."),
+            "Effet": "+10 ATT",
+            "Type": "Arme",
+            "Valeur": 10,
+            "Symbole": "⚔",
+            "Rareté": "Légendaire",
+            "Prix": 1000
         },
 }
 
@@ -506,7 +553,7 @@ ENNEMIS = {
     }
 }
 
-PRENOMS = ["Alaric", "Balthar", "Cedric", "Darael", "Elowen", "Faelar", "Gwendal", "Havren", "Iriel", "Jorvik"]
+PRENOMS = ["Alaric", "Balthar", "Cedric", "Darael", "Elowen", "Faelar", "Gwendal", "Havren", "Iriel", "Jorvik", "Temmie"]
 
 PNJS = {
     "Aubergiste": {
@@ -560,6 +607,7 @@ QUETES = {
             },
             "Statut": -1,
             "Type": "Tuer",
+            "Difficulté": 1,
             "Cible": "Slimy",
             "Donneur": "Maire"
         },
@@ -570,12 +618,29 @@ QUETES = {
             "Récompenses": {
                 "EXP": 40,
                 "Objets": [
+                    ["Fléchette", 1],
+                ]
+            },
+            "Statut": -1,
+            "Type": "Tuer",
+            "Difficulté": 2,
+            "Cible": "Gobelin",
+            "Donneur": "Maire"
+        },
+        "Squelette": {
+            "Nom": "Extermination des Squelettes",
+            "Description": "Les Squelettes envahissent la forêt voisine et menacent les récoltes des villageois.",
+            "Objectif": "Tuer 3 Squelette",
+            "Récompenses": {
+                "EXP": 60,
+                "Objets": [
                     ["Potion d'énergie", 1],
                 ]
             },
             "Statut": -1,
             "Type": "Tuer",
-            "Cible": "Gobelin",
+            "Difficulté": 3,
+            "Cible": "Squelette",
             "Donneur": "Maire"
         },
     }
@@ -715,7 +780,7 @@ def combat(perso=PERSONNAGE, enn=None, inv=INVENTAIRE):
         elif action == 666:
             enn["PV"] -= 66666
             playsound("Demon")
-            progprint(f"\n𖤐  {NomPerso} invoque une force maléfique et inflige des dégâts dévastateurs à {NomEnn} !")
+            progprint(f"\n⛤  {NomPerso} invoque une force maléfique et inflige des dégâts dévastateurs à {NomEnn} !")
             wait(1)
 
         ### Fuite ###
@@ -1045,19 +1110,21 @@ def afficher_stats(perso=PERSONNAGE):
 
 def afficher_inventaire(inv=INVENTAIRE):
     progprint("\n═════════ Inventaire ═════════", gras=True)
-    progprint("Équipement :",2)
-    for item, details in inv["Équipement"].items():
-        if details["Quantité"] == -1:
-            progprint(f"  - {item} : {details['Effet']}",2)
+    progprint(gras("Équipement :"), 2)
+    for item, quantite in inv["Équipement"].items():
+        details = EQUIPEMENT.get(item, {})
+        effet = details.get("Effet", "Effet inconnu")
+        if quantite == -1:
+            progprint(f"  - {item} : {effet}", 2)
         else:
-            progprint(f"  - {item} : {details['Effet']} (x{details['Quantité']})",2)
-    progprint("Objets :",2)
+            progprint(f"  - {item} : {effet} (x{quantite})", 2)
+    progprint(gras("Objets :"), 2)
     for objet, quantite in inv["Objets"].items():
         if quantite != 0:
-            details = OBJETS[objet]
-            effet = details["Effet"]
+            details = OBJETS.get(objet, {})
+            effet = details.get("Effet", "Effet inconnu")
             progprint(f"  - {objet} : {effet} (x{quantite})", 2)
-    progprint(f"OR : {inv['OR']}",2)
+    progprint(f"OR : {inv['OR']}", 2, gras=True)
     progprint("══════════════════════════════\n", gras=True)
 
 def afficher_barre(type="PV", perso=PERSONNAGE, long_base=20, nom=True):
@@ -1147,7 +1214,17 @@ def reinitialiser_bonus(perso, stats=None):
         if stat in perso["BONUS"]:
             perso["BONUS"][stat] = 0
     progprint(f"{perso['Nom']} ressent une rechute d'énergie.", 2)
-    
+
+def appliquer_equipement(perso, nom_equip, quantite=1):
+    equip = EQUIPEMENT.get(nom_equip)
+    if not equip:
+        return
+    effet = equip.get("Effet", "")
+    if effet.startswith("+") and "ATT" in effet:
+        perso["ATT"] += equip["Valeur"] * quantite
+    elif effet.startswith("+") and "DEF" in effet:
+        perso["DEF"] += equip["Valeur"] * quantite
+
 def donner_quete(quete=None, NomDonneur=None, perso=PERSONNAGE):
     NomPerso = perso["Nom"]
     if quete is None:
@@ -1276,6 +1353,10 @@ def village(perso=PERSONNAGE, inv=INVENTAIRE):
             wait(1)
             afficher_inventaire(inv)
             wait(1)
+        
+        ### Sauvegarder
+        elif choix == 6:
+            sauvegarder_json()
             
         choix = choisir_actions(actions, "Village", "Quitter le village")
     
@@ -1295,7 +1376,21 @@ def mairie(perso=PERSONNAGE, inv=INVENTAIRE):
     progprint(f"{NomPerso} entre dans la mairie.", 2)
     wait(1)
     NomMaire = PNJS["Maire"]["Nom"].capitalize()
-    quete = QUETES["Secondaires"]["Slimy"]
+    playmusic("Secret", stop=True)
+    # Sélection de la quête adaptée
+    quetes = list(QUETES["Secondaires"].values())
+    quete = None
+    for q in quetes:
+        if q.get("Difficulté") == perso["LVL"]:
+            quete = q
+    if quete is None:
+        dialogue(NomMaire, f"Ah, {NomPerso}... Tu veux une quête ? Désolé, j'ai rien à ton niveau. Reviens plus tard, hein !")
+        playsound("Gobelin_Rire")
+        progprint(f"{NomPerso} se sent légèrement humilié...\n", 2)
+        playsound("Fuite")
+        progprint(f"{NomPerso} sort de la mairie.\n", 2)
+        return
+    
     if quete["Cible"] in perso["Quêtes"]:
         if quete["Statut"] >= 0 and quete["Statut"] < int(quete["Objectif"].split()[1]):
             dialogue(NomMaire, f"Qu'est-ce que vous attendez pour finir la quête ? Allez-y !")
@@ -1323,23 +1418,50 @@ def boutique(perso=PERSONNAGE, inv=INVENTAIRE):
     progprint(f"{NomPerso} entre dans la boutique.", 2)
     wait(1)
     NomMarch = PNJS["Marchand"]["Nom"].capitalize()
+    if NomMarch == "TEMMIE":  # Easter egg
+        playmusic("Boutique", stop=True)
     dialogue(NomMarch, f"Bienvenue à la boutique, {NomPerso} ! Je suis {NomMarch} le Marchand.")
-    dialogue(NomMarch, f"Voici les objets que j'ai en stock.")
+    dialogue(NomMarch, f"Voici ce que j'ai en stock.")
     print()
+
     objets_dispos = []
     for objet in PNJS["Marchand"]["Objets"]:
         prix = OBJETS[objet]["Prix"]
-        objets_dispos.append((objet, prix))
+        objets_dispos.append(("objet", objet, prix))
+    for equip in EQUIPEMENT:
+        prix = EQUIPEMENT[equip]["Prix"]
+        objets_dispos.append(("equipement", equip, prix))
+
     actions = []
-    for objet, prix in objets_dispos:
-        actions.append(f"{objet} - {prix} OR")
+    for typ, nom, prix in objets_dispos:
+        if typ == "objet":
+            actions.append(f"{nom} (Objet) - {prix} OR")
+        else:
+            actions.append(f"{nom} (Équipement) - {prix} OR")
+
     choix = choisir_actions(actions, "Boutique", "Revenir au village")
     while choix != 0:
-        NomObjet = objets_dispos[choix - 1][0]
-        if acheter_objet(NomObjet):
-            progprint(f"OR restant : {inv['OR']} OR", 2)
+        typ, NomItem, prix = objets_dispos[choix - 1]
+        if typ == "objet":
+            if acheter_objet(NomItem):
+                progprint(f"OR restant : {inv['OR']} OR", 2)
+        else:  # Équipement
+            if inv["OR"] >= prix:
+                inv["OR"] -= prix
+                if NomItem in inv["Équipement"]:
+                    inv["Équipement"][NomItem] += 1
+                else:
+                    inv["Équipement"][NomItem] = 1
+                appliquer_equipement(perso, NomItem)
+                playsound("Pièce")
+                progprint(f"✓ {NomPerso} a acheté {NomItem} pour {prix} OR.", 2)
+                progprint(f"OR restant : {inv['OR']} OR", 2)
+            else:
+                playsound("Chip")
+                progprint(f"✘ {NomPerso} n'a pas assez d'or pour acheter {NomItem}.", 2)
         choix = choisir_actions(actions, "Boutique", "Revenir au village")
     dialogue(NomMarch, f"Merci et au revoir !", 0)
+    playmusic("Boutique", stop=True)
     playsound("Fuite")
     progprint(f"{NomPerso} sort de la boutique.\n", 2)
         
@@ -1481,3 +1603,144 @@ def execution():
 
 
 execution()
+
+'''Acheter & vendre
+def acheter(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
+    NomPerso = perso["Nom"]
+    NomMarch = marchand["Nom"].capitalize()
+    dialogue(NomMarch, f"Voici ce que j'ai en stock.")
+    objets_dispos = []
+    for objet in marchand["Objets"]:
+        prix = OBJETS[objet]["Prix"]
+        stock = marchand["Objets"][objet]
+        objets_dispos.append(("objet", objet, prix, stock))
+    for equip in EQUIPEMENT:
+        prix = EQUIPEMENT[equip]["Prix"]
+        objets_dispos.append(("equipement", equip, prix, None))  # Équipement : stock illimité
+
+    actions = []
+    for typ, nom, prix, stock in objets_dispos:
+        stock_str = f" (x{stock})" if stock is not None else ""
+        if typ == "objet":
+            actions.append(f"{nom} (Objet){stock_str} - {prix} OR")
+        else:
+            actions.append(f"{nom} (Équipement) - {prix} OR")
+
+    choix = choisir_actions(actions, "Acheter", "Revenir")
+    while choix != 0:
+        typ, NomItem, prix, stock = objets_dispos[choix - 1]
+        if typ == "objet":
+            if stock is not None and stock <= 0:
+                playsound("Chip")
+                progprint(f"✘ {NomMarch} n'a plus de {NomItem} en stock.", 2)
+            elif inv["OR"] >= prix:
+                inv["OR"] -= prix
+                marchand["Objets"][NomItem] -= 1
+                if NomItem in inv["Objets"]:
+                    inv["Objets"][NomItem] += 1
+                else:
+                    inv["Objets"][NomItem] = 1
+                playsound("Pièce")
+                progprint(f"✓ {NomPerso} a acheté {NomItem} pour {prix} OR.", 2)
+                progprint(f"OR restant : {inv['OR']} OR", 2)
+            else:
+                playsound("Chip")
+                progprint(f"✘ {NomPerso} n'a pas assez d'or pour acheter {NomItem}.", 2)
+        else:  # Équipement
+            if inv["OR"] >= prix:
+                inv["OR"] -= prix
+                if NomItem in inv["Équipement"]:
+                    inv["Équipement"][NomItem] += 1
+                else:
+                    inv["Équipement"][NomItem] = 1
+                appliquer_equipement(perso, NomItem)
+                playsound("Pièce")
+                progprint(f"✓ {NomPerso} a acheté {NomItem} pour {prix} OR.", 2)
+                progprint(f"OR restant : {inv['OR']} OR", 2)
+            else:
+                playsound("Chip")
+                progprint(f"✘ {NomPerso} n'a pas assez d'or pour acheter {NomItem}.", 2)
+        choix = choisir_actions(actions, "Acheter", "Revenir")
+    dialogue(NomMarch, f"Merci pour vos achats !", 0)
+
+def vendre(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
+    NomPerso = perso["Nom"]
+    NomMarch = marchand["Nom"].capitalize()
+    dialogue(NomMarch, f"Que souhaitez-vous me vendre ?")
+    objets_dispos = []
+    for objet, quantite in inv["Objets"].items():
+        if quantite > 0:
+            prix = OBJETS[objet]["Prix"] // 2
+            stock_marchand = marchand["Objets"].get(objet, 0)
+            objets_dispos.append(("objet", objet, prix, quantite, stock_marchand))
+    for equip, quantite in inv["Équipement"].items():
+        if quantite > 0:
+            prix = EQUIPEMENT[equip]["Prix"] // 2
+            objets_dispos.append(("equipement", equip, prix, quantite, None))
+
+    if not objets_dispos:
+        progprint(f"{NomPerso} n'a rien à vendre.", 2)
+        return
+
+    actions = []
+    for typ, nom, prix, quantite, stock_marchand in objets_dispos:
+        actions.append(f"{nom} (x{quantite}) - {prix} OR")
+
+    choix = choisir_actions(actions, "Vendre", "Revenir")
+    while choix != 0:
+        typ, NomItem, prix, quantite, stock_marchand = objets_dispos[choix - 1]
+        if typ == "objet":
+            inv["Objets"][NomItem] -= 1
+            marchand["Objets"][NomItem] = marchand["Objets"].get(NomItem, 0) + 1
+            inv["OR"] += prix
+            playsound("Pièce")
+            progprint(f"✓ {NomPerso} a vendu {NomItem} pour {prix} OR.", 2)
+            progprint(f"OR total : {inv['OR']} OR", 2)
+        else:  # Équipement
+            inv["Équipement"][NomItem] -= 1
+            inv["OR"] += prix
+            playsound("Pièce")
+            progprint(f"✓ {NomPerso} a vendu {NomItem} pour {prix} OR.", 2)
+            progprint(f"OR total : {inv['OR']} OR", 2)
+        # Mettre à jour la liste après la vente
+        objets_dispos = []
+        for objet, quantite in inv["Objets"].items():
+            if quantite > 0:
+                prix = OBJETS[objet]["Prix"] // 2
+                stock_marchand = marchand["Objets"].get(objet, 0)
+                objets_dispos.append(("objet", objet, prix, quantite, stock_marchand))
+        for equip, quantite in inv["Équipement"].items():
+            if quantite > 0:
+                prix = EQUIPEMENT[equip]["Prix"] // 2
+                objets_dispos.append(("equipement", equip, prix, quantite, None))
+        if not objets_dispos:
+            progprint(f"{NomPerso} n'a plus rien à vendre.", 2)
+            break
+        actions = []
+        for typ, nom, prix, quantite, stock_marchand in objets_dispos:
+            actions.append(f"{nom} (x{quantite}) - {prix} OR")
+        choix = choisir_actions(actions, "Vendre", "Revenir")
+    dialogue(NomMarch, f"Merci pour vos ventes !", 0)
+
+def boutique(perso=PERSONNAGE, inv=INVENTAIRE):
+    NomPerso = perso["Nom"]
+    playsound("Fuite")
+    progprint(f"{NomPerso} entre dans la boutique.", 2)
+    wait(1)
+    NomMarch = PNJS["Marchand"]["Nom"].capitalize()
+    if NomMarch == "TEMMIE":  # Easter egg
+        playmusic("Boutique", stop=True)
+    dialogue(NomMarch, f"Bienvenue à la boutique, {NomPerso} ! Je suis {NomMarch} le Marchand.")
+    actions = ["Acheter", "Vendre"]
+    choix = choisir_actions(actions, "Boutique", "Revenir au village")
+    while choix != 0:
+        if choix == 1:
+            acheter(perso, inv)
+        elif choix == 2:
+            vendre(perso, inv)
+        choix = choisir_actions(actions, "Boutique", "Revenir au village")
+    dialogue(NomMarch, f"Merci et au revoir !", 0)
+    playmusic("Boutique", stop=True)
+    playsound("Fuite")
+    progprint(f"{NomPerso} sort de la boutique.\n", 2)
+'''

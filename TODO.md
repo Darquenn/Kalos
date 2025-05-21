@@ -1,18 +1,16 @@
 # ✅ To-Do List
 
-## 🚀 Fonctionnalités en Cours
-
+### 🚀 Fonctionnalités à faire
 - [ ] Système de campement
 - [ ] Personnalités d'ennemis
 - [ ] Histoire
 
-## 🔄 Améliorations et Optimisations
+### 🔄 Améliorations et Optimisations
+*Rien*
 
-- [ ] Système de sauvegarde
-- [ ] Alignement des textes dans l'inspection des ennemis
-
-## 🏆 Fonctionnalités Terminées
-
+### 🏆 Fonctionnalités Terminées
 - [x] Système de quêtes
 - [x] Energie EN
 - [x] Sons et musiques
+- [x] Système de sauvegarde
+- [x] Alignement des textes dans l'inspection des ennemis
