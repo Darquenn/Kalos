@@ -14,3 +14,4 @@
 - [x] Sons et musiques
 - [x] Système de sauvegarde
 - [x] Alignement des textes dans l'inspection des ennemis
+- [x] Système d'achat et vente d'objets

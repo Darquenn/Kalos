@@ -228,8 +228,8 @@ def cls(keep=False):
 def parametrage():
     global SONS_ACTIVES, PROGPRINT, COULEUR, code_couleur_CMD
     cprint("\n═════════ Paramètres du jeu ═════════", "light_blue")
-    SONS_ACTIVES = input(f"♬ Activer les sons et musiques ? [actuel: {'Oui' if SONS_ACTIVES else 'Non'}] : " or SONS_ACTIVES).strip().lower().startswith("o")
-    PROGPRINT = input(f"… Activer l'affichage progressif ? [actuel: {'Oui' if PROGPRINT else 'Non'}] : " or PROGPRINT).strip().lower().startswith("o")
+    SONS_ACTIVES = input(f"♬ Activer les sons et musiques ? [actuel: {'Oui' if SONS_ACTIVES else 'Non'}] : ").strip().lower().startswith("o") or SONS_ACTIVES
+    PROGPRINT = input(f"… Activer l'affichage progressif ? [actuel: {'Oui' if PROGPRINT else 'Non'}] : ").strip().lower().startswith("o") or PROGPRINT
     # print("Couleurs disponibles :")
     # for i, (couleur, code) in enumerate(couleurs_CMD.items(), 1):
     #     print(f"  {couleur} ({code})", end="\n" if i % 2 == 0 else "  ")
@@ -351,7 +351,7 @@ def choisir_sauvegarde(profil):
         playsound("Chip")
         print("⚠ Aucune sauvegarde disponible.")
         return None
-    print("\n📂 Sauvegardes disponibles :")
+    print("\n🗁 Sauvegardes disponibles :")
     for i, fichier in enumerate(fichiers, 1):
         print(f"  {i}) {fichier}")
     print("  0) Annuler")
@@ -376,15 +376,15 @@ def charger_jeu(save_data):
         return
 
 def menu_principal():
-    playsound("Button")
-    print("""
-    ╔═══════════════════════════╗
-    ║  1)   Nouvelle partie     ║
-    ║  2)   Charger une partie  ║
-    ║  0)   Quitter le jeu      ║
-    ╚═══════════════════════════╝\n""")
     choix = -1
     while choix not in [0, 1, 2]:
+        playsound("Button")
+        print("""
+        ╔═══════════════════════════╗
+        ║  1)   Nouvelle partie     ║
+        ║  2)   Charger une partie  ║
+        ║  0)   Quitter le jeu      ║
+        ╚═══════════════════════════╝\n""")
         choix = int(input(">>> ").strip())
         if choix == 1:
             profil = choisir_profil()
@@ -532,6 +532,15 @@ OBJETS = {
             "Rareté": "Commun",
             "Prix": 50
         },
+        "Bombe": {
+            "Description": ("Un explosif artisanal très dangereux.", "Inflige 100 DEG à l'ennemi"),
+            "Effet": "50 DEG",
+            "Type": "DEG",
+            "Valeur": 50,
+            "Symbole": "✸",
+            "Rareté": "Rare",
+            "Prix": 100
+        },
 } 
 
 ENNEMIS = {
@@ -589,6 +598,7 @@ PNJS = {
             "Potion d'énergie": 10,
             "Poudre enchantée": 5,
             "Fléchette": 10,
+            "Bombe": 5,
         },
         "Equipement": {
             "Épée en fer": 1,
@@ -684,7 +694,6 @@ def choisir_ennemi(perso=PERSONNAGE, ENNEMIS=ENNEMIS):
     if not ENNEMIS_adaptes:
         ENNEMIS_adaptes = list(ENNEMIS.values())
     return deepcopy(choice(ENNEMIS_adaptes))
-
 
 def combat(perso=PERSONNAGE, enn=None, inv=INVENTAIRE):
     if enn is None:
@@ -1227,23 +1236,25 @@ def acheter_objet(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
     for objet in marchand["Objets"]:
         prix = OBJETS[objet]["Prix"]
         stock = marchand["Objets"][objet]
-        objets_dispos.append(("objet", objet, prix, stock))
+        symbole = OBJETS[objet]["Symbole"]
+        objets_dispos.append(("objet", objet, prix, stock, symbole))
     for equip in marchand.get("Equipement", {}):
         prix = EQUIPEMENT[equip]["Prix"]
         stock = marchand["Equipement"][equip]
-        objets_dispos.append(("equipement", equip, prix, stock))
+        symbole = EQUIPEMENT[equip]["Symbole"]
+        objets_dispos.append(("equipement", equip, prix, stock, symbole))
 
     actions = []
-    for typ, nom, prix, stock in objets_dispos:
+    for typ, nom, prix, stock, symbole in objets_dispos:
         stock_str = f" (x{stock})" if stock is not None else ""
         if typ == "objet":
-            actions.append(f"{nom} (Objet){stock_str} - {prix} OR")
+            actions.append(f"{symbole} {nom}{stock_str} - {prix} OR")
         else:
-            actions.append(f"{nom} (Équipement) - {prix} OR")
+            actions.append(f"{symbole} {nom} - {prix} OR")
 
     choix = choisir_actions(actions, "Acheter", "Revenir")
     while choix != 0:
-        typ, NomItem, prix, stock = objets_dispos[choix - 1]
+        typ, NomItem, prix, stock, symbole = objets_dispos[choix - 1]
         if typ == "objet":
             if stock is not None and stock <= 0:
                 playsound("Chip")

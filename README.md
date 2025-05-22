@@ -1,5 +1,5 @@
 # ⚔️ Kalos ⚔️
-### Un RPG textuel en Python ###
+### Un RPG textuel en Python
 
 ## 📌 Prérequis
 Avant de commencer, assurez-vous d'avoir les éléments suivants installés sur votre machine :
