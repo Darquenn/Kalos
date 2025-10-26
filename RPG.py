@@ -1425,7 +1425,9 @@ def verifier_niveau(perso=PERSONNAGE):
         perso["PV"] = perso["PV_MAX"]
         perso["EN"] = perso["EN_MAX"]
         perso["ATT"] += 2
+        perso["ATT_BASE"] += 2
         perso["DEF"] += 1
+        perso["DEF_BASE"] += 1
         perso["LUCK"] += 1
         playsound("LevelUp1")
         progprint(f"★ {perso['Nom']} passe au niveau {perso['LVL']} !", 2)
