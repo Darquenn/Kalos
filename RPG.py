@@ -270,12 +270,12 @@ PERSONNAGE = {
     "LVL": 1,
     "PV": 100, "PV_MAX": 100,
     "EN": 20, "EN_MAX": 20,
-    "ATT": 3, "DEF": 2, "Chance": 10,
+    "ATT": 3, "DEF": 2, "LUCK": 10,
     "BONUS": {
         "PV_MAX": 0,
         "ATT": 0,
         "DEF": 0,
-        "Chance": 0
+        "LUCK": 0
     },
     "Quêtes": []
 }
@@ -394,14 +394,14 @@ ENNEMIS = {
         "Nom": "Slimy",
         "LVL": 1, "EXP": 20,
         "PV": 30, "PV_MAX": 30,
-        "ATT": 3, "DEF": 1, "Chance": 8,
+        "ATT": 3, "DEF": 1, "LUCK": 8,
         "Description": "Un tas de gelée ou de morve ?",
     },
     "Gobelin": {
         "Nom": "Gobelin",
         "LVL": 2, "EXP": 40,
         "PV": 50, "PV_MAX": 50,
-        "ATT": 4, "DEF": 2, "Chance": 10,
+        "ATT": 4, "DEF": 2, "LUCK": 10,
         "Description": "Un méchant lutin vert",
         "Or": randint(10, 50),
         "Objets": {
@@ -412,14 +412,14 @@ ENNEMIS = {
         "Nom": "Squelette",
         "LVL": 3, "EXP": 60,
         "PV": 70, "PV_MAX": 70,
-        "ATT": 5, "DEF": 3, "Chance": 8,
+        "ATT": 5, "DEF": 3, "LUCK": 8,
         "Description": "Un tas d'os articulés",
     },
     "Leprechaun": {
         "Nom": "Leprechaun",
         "LVL": 4, "EXP": 80,
         "PV": 80, "PV_MAX": 80,
-        "ATT": 4, "DEF": 4, "Chance": 15,
+        "ATT": 4, "DEF": 4, "LUCK": 15,
         "Description": "Un farfadet irlandais",
         "Or": randint(50, 100),
         "Objets": {
@@ -580,12 +580,14 @@ def creer_partie(profil):
     dossier = f"saves/{profil}"
     if os.path.exists(dossier) and os.listdir(dossier):
         playsound("Alerte")
-        progprint(f"⚠ Attention : des sauvegardes existent déjà pour {profil}.", 2)
+        print(f"⚠ Attention : des sauvegardes existent déjà pour {profil}.")
         confirmation = input("Voulez-vous vraiment créer une nouvelle partie ? (Oui/Non) : ").strip().lower()
         if not confirmation.startswith("o"):
-            progprint("Création annulée.", 2)
+            print("Création annulée.")
             wait(1)
             return
+        print("↺ Création de la partie...", 2)
+        wait(1)
     nom_perso = input("Comment s'appelle ton personnage ? ").strip()
     if not nom_perso:
         nom_perso = "Darawen"
@@ -739,7 +741,7 @@ def combat(perso=PERSONNAGE, enn=None, inv=INVENTAIRE):
         print(afficher_barre('PV', enn))
         progprint("Que veux-tu faire ?", 0.05)
         
-        actions = ["Attaque", f"Attaque critique ({2 * perso['Chance']}%)", "Objet", "Inspection", "Passer"]
+        actions = ["Attaque", f"Attaque critique ({2 * perso['LUCK']}%)", "Objet", "Inspection", "Passer"]
         action = choisir_actions(actions, retour="Fuite", cheatcode=666)
         wait(0.5)
         
@@ -768,7 +770,7 @@ def combat(perso=PERSONNAGE, enn=None, inv=INVENTAIRE):
                 playsound("Attaque")
                 playsound("Reflect")
             else:
-                if randint(1, 100) <= 2 * perso["Chance"]:
+                if randint(1, 100) <= 2 * perso["LUCK"]:
                     DEGe = (perso["ATT"] - enn["DEF"]) * 2 + randint(2, 3)
                     enn["PV"] -= DEGe
                     progprint(f"🗲 {NomPerso} réussit une attaque critique et inflige {DEGe} DEG à {NomEnn} !")
@@ -863,7 +865,7 @@ def combat(perso=PERSONNAGE, enn=None, inv=INVENTAIRE):
             playsound("Alerte")
             progprint(f"‼ {NomEnn} semble terrifié et tente de fuir !")
             wait(1)
-            seuil_fuite = 30 + enn["Chance"] - perso["Chance"]
+            seuil_fuite = 30 + enn["LUCK"] - perso["LUCK"]
             if randint(1, 100) <= seuil_fuite:
                 playsound("Fuite")
                 progprint(f"༄ {NomEnn} s'enfuit du combat !")
@@ -884,8 +886,8 @@ def combat(perso=PERSONNAGE, enn=None, inv=INVENTAIRE):
             progprint(f"🛡 {NomEnn} ne peut pas percer la défense de {NomPerso} !")
         else:
             DEGp = max((enn["ATT"] - perso["DEF"]) * randint(1, 3) + 1, 0)
-            critique = randint(1, 100) <= enn["Chance"]
-            esquive = randint(1, 100) <= perso["Chance"]
+            critique = randint(1, 100) <= enn["LUCK"]
+            esquive = randint(1, 100) <= perso["LUCK"]
             if critique and not esquive:
                 DEGp *= 2
                 perso["PV"] -= DEGp
@@ -952,7 +954,7 @@ def combat(perso=PERSONNAGE, enn=None, inv=INVENTAIRE):
         wait(1)
     if any(perso["BONUS"].values()):
         reinitialiser_bonus(perso)
-        for stat in ["PV_MAX", "ATT", "DEF", "Chance"]:
+        for stat in ["PV_MAX", "ATT", "DEF", "LUCK"]:
             perso[stat] = calculer_bonus(perso, stat)
         perso["PV"] = min(perso["PV"], perso["PV_MAX"])
     wait(1)
@@ -981,7 +983,7 @@ def balade(perso=PERSONNAGE, cout_EN=3, continuer=True):
             playsound("Fuite")
             progprint(f"{NomPerso} se balade... -{min(cout_EN, perso['EN'])} EN", 2)
             print(afficher_barre('EN', perso)+"\n")
-            action = randint(1, perso["Chance"])
+            action = randint(1, perso["LUCK"])
             wait(1.5)
             
             if action <= 5:
@@ -1013,7 +1015,7 @@ def balade(perso=PERSONNAGE, cout_EN=3, continuer=True):
                 }
                 rarete = ["Commun"]
                 for palier, raretes in paliers.items():
-                    if perso["Chance"] > palier:
+                    if perso["LUCK"] > palier:
                         rarete = raretes
                 objets_possibles = []
                 for nom, details in OBJETS.items():
@@ -1098,7 +1100,7 @@ def afficher_stats(perso=PERSONNAGE):
     EN = afficher_barre('EN', nom=False)
     ATT = perso['ATT']
     DEF = perso['DEF']
-    Chance = perso['Chance']
+    LUCK = perso['LUCK']
     longueur = max(44, (len(NomPerso) + 41))
     progprint(f"╔═════════{((longueur - 44) // 2) * '═'} Statistiques de {NomPerso} {((longueur - 44) // 2) * '═'}════════╗", 0.001, gras=True)
     progprint(f"║ ✱  LVL {LVL} {(longueur - len(str(LVL)) - 12) * ' '} ║", 2, gras=True)
@@ -1107,7 +1109,7 @@ def afficher_stats(perso=PERSONNAGE):
     progprint(f"║ ✱  EN {EN} {(longueur - len(str(EN)) + 6) * ' '} {gras('║')}", 2, gras=True)
     progprint(f"║ ✱  ATT {ATT} {(longueur - len(str(ATT)) - 12) * ' '} ║", 2, gras=True)
     progprint(f"║ ✱  DEF {DEF} {(longueur - len(str(DEF)) - 12) * ' '} ║", 2, gras=True)
-    progprint(f"║ ✱  Chance {Chance} {(longueur - len(str(Chance)) - 15) * ' '} ║", 2, gras=True)
+    progprint(f"║ ✱  LUCK {LUCK} {(longueur - len(str(LUCK)) - 13) * ' '} ║", 2, gras=True)
     progprint(f"╚{(longueur - 2) * '═'}╝", 0.001, gras=True)
 
 def afficher_inventaire(inv=INVENTAIRE):
@@ -1416,7 +1418,7 @@ def verifier_niveau(perso=PERSONNAGE):
             "EN": perso["EN"],
             "ATT": perso["ATT"],
             "DEF": perso["DEF"],
-            "Chance": perso["Chance"]
+            "LUCK": perso["LUCK"]
         }
         perso["PV_MAX"] += 10
         perso["EN_MAX"] += 5
@@ -1424,7 +1426,7 @@ def verifier_niveau(perso=PERSONNAGE):
         perso["EN"] = perso["EN_MAX"]
         perso["ATT"] += 2
         perso["DEF"] += 1
-        perso["Chance"] += 1
+        perso["LUCK"] += 1
         playsound("LevelUp1")
         progprint(f"★ {perso['Nom']} passe au niveau {perso['LVL']} !", 2)
         wait(0.25)
@@ -1750,13 +1752,13 @@ def fontaine(perso=PERSONNAGE, inv=INVENTAIRE):
                 OrPerso -= 1
                 inv["OR"] = OrPerso
                 wait(1)
-                if randint(1, 10) * perso["Chance"] >= 90:
+                if randint(1, 10) * perso["LUCK"] >= 90:
                     playsound("Choeur")
                     progprint(f"La fontaine brille légèrement et {NomPerso} sent une douce chaleur.", 2)
                     wait(1)
                     playsound("LevelUp2")
                     progprint(f"{NomPerso} se sent plus chanceux !", 2)
-                    perso["Chance"] += 1
+                    perso["LUCK"] += 1
                 else:
                     progprint("Cela n'a aucun effet...", 2)
                 wait(1)
