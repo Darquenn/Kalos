@@ -596,7 +596,7 @@ PNJS = {
             "Fléchette": 10,
             "Bombe": 5,
         },
-        "Equipement": {
+        "Équipement": {
             "Épée en fer": 1,
             "Armure en fer": 1,
         },
@@ -1235,17 +1235,19 @@ def acheter_objet(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
         prix = OBJETS[objet]["Prix"]
         stock = marchand["Objets"][objet]
         symbole = OBJETS[objet]["Symbole"]
-        objets_dispos.append(("objet", objet, prix, stock, symbole))
-    for equip in marchand.get("Equipement", {}):
+        if stock > 0:
+            objets_dispos.append(("Objets", objet, prix, stock, symbole))
+    for equip in marchand.get("Équipement", {}):
         prix = EQUIPEMENT[equip]["Prix"]
-        stock = marchand["Equipement"][equip]
+        stock = marchand["Équipement"][equip]
         symbole = EQUIPEMENT[equip]["Symbole"]
-        objets_dispos.append(("equipement", equip, prix, stock, symbole))
+        if stock > 0:
+            objets_dispos.append(("Équipement", equip, prix, stock, symbole))
 
     actions = []
     for typ, nom, prix, stock, symbole in objets_dispos:
         stock_str = f" (x{stock})" if stock is not None else ""
-        if typ == "objet":
+        if typ == "Objets":
             actions.append(f"{symbole} {nom}{stock_str} - {prix} OR")
         else:
             actions.append(f"{symbole} {nom} - {prix} OR")
@@ -1253,37 +1255,26 @@ def acheter_objet(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
     choix = choisir_actions(actions, "Acheter", "Revenir")
     while choix != 0:
         typ, NomItem, prix, stock, symbole = objets_dispos[choix - 1]
-        if typ == "objet":
-            if stock is not None and stock <= 0:
-                playsound("Chip")
-                progprint(f"✘ {NomMarch} n'a plus de {NomItem} en stock.", 2)
-            elif inv["OR"] >= prix:
-                inv["OR"] -= prix
-                marchand["Objets"][NomItem] -= 1
-                if NomItem in inv["Objets"]:
-                    inv["Objets"][NomItem] += 1
-                else:
-                    inv["Objets"][NomItem] = 1
-                playsound("Pièce")
-                progprint(f"✓ {NomPerso} a acheté {NomItem} pour {prix} OR.", 2)
-                progprint(f"OR restant : {inv['OR']} OR", 2)
+        if stock is not None and stock <= 0:
+            playsound("Chip")
+            progprint(f"✘ {NomMarch} n'a plus de {NomItem} en stock.", 2)
+            dialogue(NomMarch, f"Oups ! Je crois que je n'en ai plus...")
+        elif inv["OR"] >= prix:
+            inv["OR"] -= prix
+            marchand[typ][NomItem] -= 1
+            if NomItem in inv[typ]:
+                inv[typ][NomItem] += 1
             else:
-                playsound("Chip")
-                progprint(f"✘ {NomPerso} n'a pas assez d'or pour acheter {NomItem}.", 2)
-        else:  # Équipement
-            if inv["OR"] >= prix:
-                inv["OR"] -= prix
-                if NomItem in inv["Équipement"]:
-                    inv["Équipement"][NomItem] += 1
-                else:
-                    inv["Équipement"][NomItem] = 1
+                inv[typ][NomItem] = 1
+            if typ == "Équipement":
                 appliquer_equipement(perso, NomItem)
-                playsound("Pièce")
-                progprint(f"✓ {NomPerso} a acheté {NomItem} pour {prix} OR.", 2)
-                progprint(f"OR restant : {inv['OR']} OR", 2)
-            else:
-                playsound("Chip")
-                progprint(f"✘ {NomPerso} n'a pas assez d'or pour acheter {NomItem}.", 2)
+            playsound("Pièce")
+            progprint(f"✓ {NomPerso} a acheté {NomItem} pour {prix} OR.", 2)
+            progprint(f"OR restant : {inv['OR']} OR", 2)
+        else:
+            playsound("Chip")
+            progprint(f"✘ {NomPerso} n'a pas assez d'or pour acheter {NomItem}.", 2)
+        
         choix = choisir_actions(actions, "Acheter", "Revenir")
     dialogue(NomMarch, f"Merci pour vos achats !", 0)
 
@@ -1296,11 +1287,11 @@ def vendre_objet(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
         if quantite > 0:
             prix = OBJETS[objet]["Prix"] // 2
             stock_marchand = marchand["Objets"].get(objet, 0)
-            objets_dispos.append(("objet", objet, prix, quantite, stock_marchand))
+            objets_dispos.append(("Objets", objet, prix, quantite, stock_marchand))
     for equip, quantite in inv["Équipement"].items():
         if quantite > 0:
             prix = EQUIPEMENT[equip]["Prix"] // 2
-            objets_dispos.append(("equipement", equip, prix, quantite, None))
+            objets_dispos.append(("Équipement", equip, prix, quantite, None))
     if not objets_dispos:
         progprint(f"{NomPerso} n'a rien à vendre.", 2)
         return
@@ -1312,7 +1303,7 @@ def vendre_objet(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
     choix = choisir_actions(actions, "Vendre", "Revenir")
     while choix != 0:
         typ, NomItem, prix, quantite, stock_marchand = objets_dispos[choix - 1]
-        if typ == "objet":
+        if typ == "Objets":
             inv["Objets"][NomItem] -= 1
             marchand["Objets"][NomItem] = marchand["Objets"].get(NomItem, 0) + 1
             inv["OR"] += prix
@@ -1331,11 +1322,11 @@ def vendre_objet(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
             if quantite > 0:
                 prix = OBJETS[objet]["Prix"] // 2
                 stock_marchand = marchand["Objets"].get(objet, 0)
-                objets_dispos.append(("objet", objet, prix, quantite, stock_marchand))
+                objets_dispos.append(("Objets", objet, prix, quantite, stock_marchand))
         for equip, quantite in inv["Équipement"].items():
             if quantite > 0:
                 prix = EQUIPEMENT[equip]["Prix"] // 2
-                objets_dispos.append(("equipement", equip, prix, quantite, None))
+                objets_dispos.append(("Équipement", equip, prix, quantite, None))
         if not objets_dispos:
             progprint(f"{NomPerso} n'a plus rien à vendre.", 2)
             break
