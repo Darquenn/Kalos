@@ -6,7 +6,8 @@
 - [ ] Histoire
 
 ### 🔄 Améliorations et Optimisations
-*Rien*
+- [ ] Système d'affichage progressif en couleurs
+- [ ] 
 
 ### 🏆 Fonctionnalités Terminées
 - [x] Système de quêtes

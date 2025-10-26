@@ -190,7 +190,7 @@ def colorer(text, couleur=COULEUR):
     else:
         return colored(text, couleur)
 
-def progprint(text, multi=1, delai=0.01, progprint=PROGPRINT, voix=False, gras=False, couleur=None):
+def progprint(text, multi=1, delai=0.01, voix=False, gras=False, couleur=None, progprint=PROGPRINT):
     if couleur is not None:
         text = colored(text, couleur)
     if progprint:
@@ -209,10 +209,12 @@ def progprint(text, multi=1, delai=0.01, progprint=PROGPRINT, voix=False, gras=F
             text = colored(text, attrs=["bold"])
         print(text)
 
-def dialogue(NomPNJ, text, attente=1):
+def dialogue(NomPNJ, text, attente=1, son=None):
     NomPNJ = gras(NomPNJ.upper())
     text = f"{NomPNJ} : {text}"
     progprint(text, 2, voix=True)
+    if son:
+        playsound(son)
     wait(attente)
 
 def cls(keep=False):
@@ -228,8 +230,12 @@ def cls(keep=False):
 def parametrage():
     global SONS_ACTIVES, PROGPRINT, COULEUR, code_couleur_CMD
     cprint("\n═════════ Paramètres du jeu ═════════", "light_blue")
-    SONS_ACTIVES = input(f"♬ Activer les sons et musiques ? [actuel: {'Oui' if SONS_ACTIVES else 'Non'}] : ").strip().lower().startswith("o") or SONS_ACTIVES
-    PROGPRINT = input(f"… Activer l'affichage progressif ? [actuel: {'Oui' if PROGPRINT else 'Non'}] : ").strip().lower().startswith("o") or PROGPRINT
+    rep_sons = input(f"♬ Activer les sons et musiques ? [actuel: {'Oui' if SONS_ACTIVES else 'Non'}] : ").strip().lower()
+    if rep_sons != "":
+        SONS_ACTIVES = rep_sons.startswith("o")
+    # rep_prog = input(f"… Activer l'affichage progressif ? [actuel: {'Oui' if PROGPRINT else 'Non'}] : ").strip().lower()
+    # if rep_prog != "":
+    #     PROGPRINT = rep_prog.startswith("o")
     # print("Couleurs disponibles :")
     # for i, (couleur, code) in enumerate(couleurs_CMD.items(), 1):
     #     print(f"  {couleur} ({code})", end="\n" if i % 2 == 0 else "  ")
@@ -242,6 +248,7 @@ def parametrage():
     playsound("Tidum")
     cprint("═════ ✓ Paramètres mis à jour ! ═════", "light_blue")
     wait(1)
+    return SONS_ACTIVES, PROGPRINT
     
 
 ### Sauvegarde ###
@@ -252,6 +259,8 @@ PROFILS = {
 }
 
 def sauvegarder_json(profil, savedata):
+    print("↺ Sauvegarde en cours...")
+    wait(1)
     dossier = f"saves/{profil}"
     if not os.path.exists(dossier):
         os.makedirs(dossier)
@@ -273,7 +282,7 @@ def charger_json(profil, nom_fichier):
         playsound("Chip")
         print(f"⚠ Le fichier de sauvegarde '{nom_fichier}' n'a pas été trouvé.")
         return
-    
+
 def choisir_profil():
     playsound("Button")
     print("""
@@ -288,6 +297,7 @@ def choisir_profil():
     return f"Profil{choix}"
 
 def creer_partie(profil):
+    global PERSONNAGE, INVENTAIRE, SONS_ACTIVES, PROGPRINT
     dossier = f"saves/{profil}"
     if os.path.exists(dossier) and os.listdir(dossier):
         playsound("Alerte")
@@ -300,43 +310,22 @@ def creer_partie(profil):
     nom_perso = input("Comment s'appelle ton personnage ? ").strip()
     if not nom_perso:
         nom_perso = "Darawen"
+    perso = PERSONNAGE
+    perso["Nom"] = nom_perso
     save_data = {
-        "PERSONNAGE" : {
-            "Nom": nom_perso,
-            "Age": 20,
-            "Classe": "Guerrier",
-            "EXP": 0, "EXP_MAX": 100,
-            "LVL": 1,
-            "PV": 100, "PV_MAX": 100,
-            "EN": 20, "EN_MAX": 20,
-            "ATT": 3, "DEF": 2, "Chance": 10,
-            "BONUS": {
-                "PV_MAX": 0,
-                "ATT": 0,
-                "DEF": 0,
-                "Chance": 0
-            },
-            "Quêtes": []
-        },
-        "INVENTAIRE": {
-            "Équipement": {
-                "Épée en bois": 1,
-                "Tunique de noob": 1,
-            },
-            "Objets": {
-                "Potion de soin": 2,
-                "Potion d'énergie": 2,
-                "Fléchette": 1,
-            },
-            "OR": 100
-        }
+        "PERSONNAGE" : perso,
+        "INVENTAIRE": INVENTAIRE,
+        "SONS_ACTIVES": SONS_ACTIVES,
+        "PROGPRINT": PROGPRINT
     }
     print(f"🛠 Création d'une nouvelle partie sur {profil}...")
     wait(1)
     sauvegarder_json(profil, save_data)
     for pnj in PNJS.values():
         choisir_prenom(pnj)
-    parametrage()
+    parametres = parametrage()
+    save_data["SONS_ACTIVES"] = parametres[0]
+    save_data["PROGPRINT"] = parametres[1]
     return save_data
 
 def choisir_sauvegarde(profil):
@@ -363,9 +352,11 @@ def choisir_sauvegarde(profil):
     return fichiers[int(choix) - 1]
 
 def charger_jeu(save_data):
-    global PERSONNAGE, INVENTAIRE, QUETES
+    global PERSONNAGE, INVENTAIRE, SONS_ACTIVES, PROGPRINT
     PERSONNAGE = save_data["PERSONNAGE"]
     INVENTAIRE = save_data["INVENTAIRE"]
+    SONS_ACTIVES = save_data["SONS_ACTIVES"]
+    PROGPRINT = save_data["PROGPRINT"]
     print(f"✔ Partie de {PERSONNAGE['Nom']} chargée avec succès !")
     wait(0.5)
     voir_infos = input("Voulez-vous voir les infos de votre personnage ? (Oui/Non) : ").strip().lower().startswith("o")
@@ -385,8 +376,8 @@ def menu_principal():
         ║  2)   Charger une partie  ║
         ║  0)   Quitter le jeu      ║
         ╚═══════════════════════════╝\n""")
-        choix = int(input(">>> ").strip())
-        if choix == 1:
+        choix = input(">>> ").strip()
+        if choix == "1":
             profil = choisir_profil()
             save_defaut = creer_partie(profil)
             if save_defaut == None:
@@ -395,7 +386,7 @@ def menu_principal():
             charger_jeu(save_defaut)
             return
 
-        elif choix == 2:
+        elif choix == "2":
             profil = choisir_profil()
             sauvegarde = choisir_sauvegarde(profil)
             if sauvegarde != None:
@@ -407,10 +398,15 @@ def menu_principal():
                 choix = -1
                 wait(1)
 
-        elif choix == 0:
+        elif choix == "0":
             print("À bientôt !")
             wait(1)
             exit()
+        
+        else:
+            playsound("Chip")
+            print("⚠ Choix invalide. Veuillez réessayer.")
+            wait(1)
   
 
 #################
@@ -701,7 +697,7 @@ def combat(perso=PERSONNAGE, enn=None, inv=INVENTAIRE):
     NomPerso = perso["Nom"].upper()
     NomEnn = enn["Nom"].upper()
     tour = 0
-    playmusic("Foret", stop=True)
+    stopmusic()
 
     playsound("Encounter1")
     progprint("⚔ Le combat commence ! ⚔", 3, gras=True)
@@ -712,7 +708,7 @@ def combat(perso=PERSONNAGE, enn=None, inv=INVENTAIRE):
 
     while perso["PV"] > 0 and enn["PV"] > 0:
         tour += 1
-        progprint(f"═════════ Tour n°{tour} ═════════",0.001, progprint=False, gras=True, couleur="light_red")
+        progprint(f"═════════ Tour n°{tour} ═════════",0.001, gras=True, couleur="light_red", progprint=False)
         print(afficher_barre('PV', perso))
         print(afficher_barre('PV', enn))
         progprint("Que veux-tu faire ?", 0.05)
@@ -889,7 +885,7 @@ def combat(perso=PERSONNAGE, enn=None, inv=INVENTAIRE):
 
         ### Vérif 2 ###
         if perso["PV"] <= 0:
-            playmusic("Combat", stop=True)
+            stopmusic()
             playsound("Hit3")
             playsound("Mort")
             progprint(f"\n{perso['Nom']} est vaincu...", 5)
@@ -901,7 +897,7 @@ def combat(perso=PERSONNAGE, enn=None, inv=INVENTAIRE):
     ### Fin du combat ###
     progprint("\n═════ Combat terminé ! ═════",3, gras=True, couleur="light_blue")
     if result.startswith("Victoire"):
-        playmusic("Combat", stop=True)
+        stopmusic()
         playsound("Victoire")
         if result == "Victoire par forfait !":
             EXP /= 2
@@ -924,7 +920,7 @@ def combat(perso=PERSONNAGE, enn=None, inv=INVENTAIRE):
                     progprint(f"Quête en cours : {quete['Nom']} - {quete['Objectif']} ({quete['Statut']}/{objectif})", 2)
     
     if result.startswith("Défaite"):
-        playmusic("Combat", stop=True)
+        stopmusic()
         playsound("Défaite")
         progprint(f"{result} {NomPerso} n'a pas gagné d'XP.", 5)
         wait(1)
@@ -1002,7 +998,7 @@ def balade(perso=PERSONNAGE, cout_EN=3, continuer=True):
                     playsound("Objet2")
                     rarete_objet = OBJETS[objet_trouve]['Rareté']
                     couleur = couleurs[rarete_objet]
-                    progprint(f"{messages[rarete_objet]} {PERSONNAGE['Nom']} a trouvé {colorer(objet_trouve, couleur)} !", 2)
+                    progprint(f"{messages[rarete_objet]} {PERSONNAGE['Nom']} a trouvé {colorer(objet_trouve, couleur.lower())} !", 2)
                     if objet_trouve in INVENTAIRE["Objets"]:
                         INVENTAIRE["Objets"][objet_trouve] += 1
                     else:
@@ -1023,7 +1019,7 @@ def balade(perso=PERSONNAGE, cout_EN=3, continuer=True):
         
         cout_EN = cout_EN_initial
         continuer = input("Continuer à se balader ? (Oui/Non) : ").lower().strip().startswith("o")
-    playmusic("Foret", stop=True)
+    stopmusic()
 
 def dormir(perso=PERSONNAGE, type_chambre="dehors", dérangé=False, inv=INVENTAIRE):
     NomPerso = perso["Nom"]
@@ -1090,10 +1086,12 @@ def afficher_inventaire(inv=INVENTAIRE):
     for item, quantite in inv["Équipement"].items():
         details = EQUIPEMENT.get(item, {})
         effet = details.get("Effet", "Effet inconnu")
-        if quantite == -1:
+        if quantite != 0:
+            progprint(f"  - {item} : {effet} (x{quantite})", 2)
+        elif quantite == -1:
             progprint(f"  - {item} : {effet}", 2)
         else:
-            progprint(f"  - {item} : {effet} (x{quantite})", 2)
+            EQUIPEMENT.pop(item)
     progprint(gras("Objets :"), 2)
     for objet, quantite in inv["Objets"].items():
         if quantite != 0:
@@ -1472,6 +1470,7 @@ def village(perso=PERSONNAGE, inv=INVENTAIRE):
     progprint(f"\n{NomPerso} arrive au village.", 2)
     wait(1)
     print()
+    # Lancer la musique du village à l'arrivée
     playmusic("Village", stop=True, volume=0.3)
     actions = ["Mairie", "Boutique", "Auberge", "Fontaine", f"Statistiques de {NomPerso}", "Sauvegarder"]
     choix = choisir_actions(actions, "Village", "Quitter le village")
@@ -1491,7 +1490,7 @@ def village(perso=PERSONNAGE, inv=INVENTAIRE):
             
         ### Fontaine
         elif choix == 4:
-            fontaine()   
+            fontaine()
                         
         ### Statistiques
         elif choix == 5:
@@ -1502,8 +1501,11 @@ def village(perso=PERSONNAGE, inv=INVENTAIRE):
         
         ### Sauvegarder
         elif choix == 6:
-            sauvegarder_json("Profil1", {PERSONNAGE, INVENTAIRE})
+            sauvegarder_json("Profil1", {"PERSONNAGE": PERSONNAGE, "INVENTAIRE": INVENTAIRE, "SONS_ACTIVES": SONS_ACTIVES, "PROGPRINT": PROGPRINT})
             
+        # if choix in [1, 2, 3, 4]:
+        #     playmusic("Village", stop=True, volume=0.3) # Reprendre la musique du village
+        
         choix = choisir_actions(actions, "Village", "Quitter le village")
     
     if perso["EN"] <= 0:
@@ -1516,13 +1518,12 @@ def village(perso=PERSONNAGE, inv=INVENTAIRE):
     wait(1)
 
 ### Mairie ###
-def mairie(perso=PERSONNAGE, inv=INVENTAIRE):
+def mairie(perso=PERSONNAGE):
     NomPerso = perso["Nom"]
     playsound("Fuite")
     progprint(f"{NomPerso} entre dans la mairie.", 2)
     wait(1)
     NomMaire = PNJS["Maire"]["Nom"].capitalize()
-    playmusic("Secret", stop=True)
     # Sélection de la quête adaptée
     quetes = list(QUETES["Secondaires"].values())
     quete = None
@@ -1530,9 +1531,9 @@ def mairie(perso=PERSONNAGE, inv=INVENTAIRE):
         if q.get("Difficulté") == perso["LVL"]:
             quete = q
     if quete is None:
-        dialogue(NomMaire, f"Ah, {NomPerso}... Tu veux une quête ? Désolé, j'ai rien à ton niveau. Reviens plus tard, hein !")
-        playsound("Gobelin_Rire")
+        dialogue(NomMaire, f"Ah, {NomPerso}... Tu veux une quête ? Désolé, j'ai rien à ton niveau. Reviens plus tard, hein !", "Gobelin_Rire")
         progprint(f"{NomPerso} se sent légèrement humilié...\n", 2)
+        wait(1)
         playsound("Fuite")
         progprint(f"{NomPerso} sort de la mairie.\n", 2)
         return
@@ -1556,6 +1557,7 @@ def mairie(perso=PERSONNAGE, inv=INVENTAIRE):
             dialogue(NomMaire, f"Dommage ! On a vraiment besoin de vous ! Au revoir !")
     playsound("Fuite")
     progprint(f"{NomPerso} sort de la mairie.\n", 2)
+    stopmusic()
 
 ### Boutique ###
 def boutique(perso=PERSONNAGE, inv=INVENTAIRE):
@@ -1706,6 +1708,7 @@ def execution():
     wait(3)
     print("(ㆆ_ㆆ) Mais si vous le voyez, c'est que vous avez vraiment forcé")
     wait(2)
+    print("Dégagez.")
     exit()
 
 
