@@ -1,0 +1,145 @@
+{
+    "PERSONNAGE": {
+        "Nom": "GOD",
+        "Age": 10000,
+        "Classe": "Dieu",
+        "EXP": 0,
+        "EXP_MAX": 100,
+        "LVL": 99,
+        "PV": 100,
+        "PV_MAX": 100,
+        "EN": 999,
+        "EN_MAX": 999,
+        "ATT": 999,
+        "DEF": 999,
+        "Chance": 100,
+        "BONUS": {
+            "PV_MAX": 0,
+            "ATT": 0,
+            "DEF": 0,
+            "Chance": 0
+        },
+        "Qu\u00eates": []
+    },
+    "INVENTAIRE": {
+        "\u00c9quipement": {
+        },
+        "Objets": {
+            "Potion de soin": 100,
+            "Potion d'\u00e9nergie": 100,
+            "Fl\u00e9chette": 100,
+            "Bombe": 100,
+            "Poudre enchant\u00e9e": 100
+        },
+        "OR": 10000
+    },
+    "PNJS": {
+        "Aubergiste": {
+            "Nom": "Balthar",
+            "PV": 100,
+            "PV_MAX": 100
+        },
+        "Marchand": {
+            "Nom": "Elowen",
+            "PV": 100,
+            "PV_MAX": 100,
+            "Objets": {
+                "Potion de soin": 10,
+                "Potion d'\u00e9nergie": 10,
+                "Poudre enchant\u00e9e": 5,
+                "Fl\u00e9chette": 10,
+                "Bombe": 5
+            },
+            "\u00c9quipement": {
+                "\u00c9p\u00e9e en fer": 1,
+                "Armure en fer": 1
+            }
+        },
+        "Maire": {
+            "Nom": "Havren",
+            "PV": 100,
+            "PV_MAX": 100
+        }
+    },
+    "QUETES": {
+        "Principales": {
+            "La Qu\u00eate": {
+                "Nom": "La Qu\u00eate",
+                "Description": "Retrouve le m\u00e9chant et tue-le",
+                "Objectif": "Tuer le m\u00e9chant",
+                "R\u00e9compenses": {
+                    "EXP": 200,
+                    "Objets": [
+                        [
+                            "\u00c9p\u00e9e l\u00e9gendaire",
+                            1
+                        ]
+                    ]
+                },
+                "Statut": "En cours",
+                "Donneur": null
+            }
+        },
+        "Secondaires": {
+            "Slimy": {
+                "Nom": "Extermination des Slimies",
+                "Description": "Les Slimies envahissent la for\u00eat voisine et menacent les r\u00e9coltes des villageois.",
+                "Objectif": "Tuer 3 Slimy",
+                "R\u00e9compenses": {
+                    "EXP": 20,
+                    "Objets": [
+                        [
+                            "Potion de soin",
+                            1
+                        ]
+                    ]
+                },
+                "Statut": -1,
+                "Type": "Tuer",
+                "Difficult\u00e9": 1,
+                "Cible": "Slimy",
+                "Donneur": "Maire"
+            },
+            "Gobelin": {
+                "Nom": "Extermination des Gobelins",
+                "Description": "Les Gobelins envahissent la for\u00eat voisine et menacent les r\u00e9coltes des villageois.",
+                "Objectif": "Tuer 3 Gobelin",
+                "R\u00e9compenses": {
+                    "EXP": 40,
+                    "Objets": [
+                        [
+                            "Fl\u00e9chette",
+                            1
+                        ]
+                    ]
+                },
+                "Statut": -1,
+                "Type": "Tuer",
+                "Difficult\u00e9": 2,
+                "Cible": "Gobelin",
+                "Donneur": "Maire"
+            },
+            "Squelette": {
+                "Nom": "Extermination des Squelettes",
+                "Description": "Les Squelettes envahissent la for\u00eat voisine et menacent les r\u00e9coltes des villageois.",
+                "Objectif": "Tuer 3 Squelette",
+                "R\u00e9compenses": {
+                    "EXP": 60,
+                    "Objets": [
+                        [
+                            "Potion d'\u00e9nergie",
+                            1
+                        ]
+                    ]
+                },
+                "Statut": -1,
+                "Type": "Tuer",
+                "Difficult\u00e9": 3,
+                "Cible": "Squelette",
+                "Donneur": "Maire"
+            }
+        }
+    },
+    "SONS_ACTIVES": true,
+    "PROGPRINT": false
+}

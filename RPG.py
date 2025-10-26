@@ -152,6 +152,7 @@ if SONS_ACTIVES:
             sons[nom] = None
 
 def playsound(nom, nb=0):
+    """Joue un son à partir de son nom. Si nb > 0, choisit un son aléatoire parmi les variantes numérotées."""
     if nb == 0:
         i = 1
         while sons.get(f"{nom}{i}"):
@@ -165,6 +166,7 @@ def playsound(nom, nb=0):
         print(f"⚠ Son '{nom}' introuvable ou désactivé.")
 
 def playmusic(nom, loop=-1, stop=False, volume=0.5):
+    """Joue une musique de fond à partir de son nom. Si stop est True, arrête la musique en cours avant de jouer la nouvelle."""
     if stop:
         pygame.mixer.music.stop()
     if SONS_ACTIVES and f"Mus_{nom}" in fichiers_sons:
@@ -178,19 +180,23 @@ def playmusic(nom, loop=-1, stop=False, volume=0.5):
         print(f"⚠ Musique '{nom}' introuvable ou désactivée.")
 
 def stopmusic():
+    """Arrête la musique de fond en cours."""
     pygame.mixer.music.stop()
 
 ### Affichage ###
 def gras(text):
+    """Retourne le texte en gras."""
     return colored(text, attrs=["bold"])
 
 def colorer(text, couleur=COULEUR):
+    """Retourne le texte coloré selon la couleur spécifiée."""
     if platform.system() == "Linux":
         return f"{couleurs_ANSI.get(couleur.lower(), couleurs_ANSI['reset'])}{text}{couleurs_ANSI['reset']}"
     else:
         return colored(text, couleur)
 
 def progprint(text, multi=1, delai=0.01, voix=False, gras=False, couleur=None, progprint=PROGPRINT):
+    """Affiche le texte de manière progressive, caractère par caractère, avec options de style et son."""
     if couleur is not None:
         text = colored(text, couleur)
     if progprint:
@@ -210,6 +216,7 @@ def progprint(text, multi=1, delai=0.01, voix=False, gras=False, couleur=None, p
         print(text)
 
 def dialogue(NomPNJ, text, attente=1, son=None):
+    """Affiche un dialogue d'un PNJ avec son nom en gras et en majuscules, joue un son si spécifié, et attend un certain temps si spécifié."""
     NomPNJ = gras(NomPNJ.upper())
     text = f"{NomPNJ} : {text}"
     progprint(text, 2, voix=True)
@@ -218,6 +225,7 @@ def dialogue(NomPNJ, text, attente=1, son=None):
     wait(attente)
 
 def cls(keep=False):
+    """Efface l'écran de la console."""
     if platform.system() == "Windows":
         os.system("cls")
     elif platform.system() == "Linux":
@@ -228,6 +236,7 @@ def cls(keep=False):
 
 ### Paramétrage ###
 def parametrage():
+    """Configure les paramètres du jeu."""
     global SONS_ACTIVES, PROGPRINT, COULEUR, code_couleur_CMD
     cprint("\n═════════ Paramètres du jeu ═════════", "light_blue")
     rep_sons = input(f"♬ Activer les sons et musiques ? [actuel: {'Oui' if SONS_ACTIVES else 'Non'}] : ").strip().lower()
@@ -525,6 +534,7 @@ PROFILS = {
 }
 
 def sauvegarder_json(profil, savedata={"PERSONNAGE": PERSONNAGE, "INVENTAIRE": INVENTAIRE, "PNJS": PNJS, "QUETES": QUETES, "SONS_ACTIVES": SONS_ACTIVES, "PROGPRINT": PROGPRINT}):
+    """Sauvegarde les données du jeu dans un fichier JSON sous le profil spécifié."""
     print("↺ Sauvegarde en cours...")
     wait(1)
     dossier = f"saves/{profil}"
@@ -538,6 +548,7 @@ def sauvegarder_json(profil, savedata={"PERSONNAGE": PERSONNAGE, "INVENTAIRE": I
     wait(0.5)
 
 def charger_json(profil, nom_fichier):
+    """Charge les données du jeu depuis un fichier JSON sous le profil spécifié."""
     try:
         with open(f"saves/{profil}/{nom_fichier}", 'r') as fichier:
             savedata = json.load(fichier)
@@ -550,6 +561,7 @@ def charger_json(profil, nom_fichier):
         return
 
 def choisir_profil():
+    """Affiche le menu de sélection de profil et retourne le profil choisi."""
     playsound("Button")
     print("""
   ╔════════════════════╗
@@ -563,6 +575,7 @@ def choisir_profil():
     return f"Profil{choix}"
 
 def creer_partie(profil):
+    """Crée une nouvelle partie pour le profil spécifié. Retourne les données de sauvegarde initiales."""
     global PERSONNAGE, INVENTAIRE, SONS_ACTIVES, PROGPRINT
     dossier = f"saves/{profil}"
     if os.path.exists(dossier) and os.listdir(dossier):
@@ -597,6 +610,7 @@ def creer_partie(profil):
     return save_data
 
 def choisir_sauvegarde(profil):
+    """Affiche le menu de sélection de sauvegarde pour le profil spécifié et retourne le nom du fichier choisi."""
     dossier = f"saves/{profil}"
     if not os.path.exists(dossier):
         playsound("Chip")
@@ -620,12 +634,21 @@ def choisir_sauvegarde(profil):
     return fichiers[int(choix) - 1]
 
 def charger_jeu(save_data):
-    global PERSONNAGE, INVENTAIRE, SONS_ACTIVES, PROGPRINT
-    PERSONNAGE = save_data["PERSONNAGE"]
-    INVENTAIRE = save_data["INVENTAIRE"]
-    SONS_ACTIVES = save_data["SONS_ACTIVES"]
-    PROGPRINT = save_data["PROGPRINT"]
-    print(f"✔ Partie de {PERSONNAGE['Nom']} chargée avec succès !")
+    """Charge les données du jeu à partir des données de sauvegarde fournies."""
+    global SONS_ACTIVES, PROGPRINT, PERSONNAGE, INVENTAIRE, QUETES, PNJS
+    if not isinstance(save_data, dict):
+        return
+    mapping = {
+        "SONS_ACTIVES": bool,
+        "PROGPRINT": bool,
+        "PERSONNAGE": dict,
+        "INVENTAIRE": dict,
+        "QUETES": dict,
+        "PNJS": dict
+    }
+    for key, expected_type in mapping.items():
+        if key in save_data and isinstance(save_data[key], expected_type):
+            globals()[key] = deepcopy(save_data[key])
     wait(0.5)
     voir_infos = input("Voulez-vous voir les infos de votre personnage ? (Oui/Non) : ").strip().lower().startswith("o")
     if voir_infos:
@@ -635,6 +658,7 @@ def charger_jeu(save_data):
         return
 
 def menu_principal():
+    """Affiche le menu principal du jeu et gère les choix de l'utilisateur."""
     choix = -1
     while choix not in [0, 1, 2]:
         playsound("Button")
@@ -683,6 +707,7 @@ def menu_principal():
 
 ### Fonctions de combat ###
 def choisir_ennemi(perso=PERSONNAGE, ENNEMIS=ENNEMIS):
+    """Choisit un ennemi adapté au niveau du personnage."""
     ENNEMIS_adaptes = [
         ennemi for ennemi in ENNEMIS.values()
         if abs(ennemi["LVL"] - perso["LVL"]) <= 1
@@ -692,6 +717,7 @@ def choisir_ennemi(perso=PERSONNAGE, ENNEMIS=ENNEMIS):
     return deepcopy(choice(ENNEMIS_adaptes))
 
 def combat(perso=PERSONNAGE, enn=None, inv=INVENTAIRE):
+    """Lance un combat entre le personnage et un ennemi."""
     if enn is None:
         enn = choisir_ennemi()
     NomPerso = perso["Nom"].upper()
@@ -935,6 +961,7 @@ def combat(perso=PERSONNAGE, enn=None, inv=INVENTAIRE):
 
 ### Fonctions d'actions ###
 def balade(perso=PERSONNAGE, cout_EN=3, continuer=True):
+    """Fonction permettant au personnage de se balader et de rencontrer des événements aléatoires."""
     NomPerso = perso["Nom"]
     cout_EN_initial = cout_EN
     while continuer:
@@ -1022,6 +1049,7 @@ def balade(perso=PERSONNAGE, cout_EN=3, continuer=True):
     stopmusic()
 
 def dormir(perso=PERSONNAGE, type_chambre="dehors", dérangé=False, inv=INVENTAIRE):
+    """Permet au personnage de dormir et de récupérer de l'énergie et des points de vie."""
     NomPerso = perso["Nom"]
     recup_EN = 0
     recup_PV = 0
@@ -1029,7 +1057,7 @@ def dormir(perso=PERSONNAGE, type_chambre="dehors", dérangé=False, inv=INVENTA
         recup_EN = 5
         progprint(f"{NomPerso} s'endort craintivement...", 5)
         wait(1)
-    elif type_chambre == "normale" or type_chambre == "campement":
+    elif type_chambre in ["normale", "campement"]:
         recup_EN = 10
         progprint(f"{NomPerso} s'endort tranquillement...", 5)
         wait(1)
@@ -1061,6 +1089,7 @@ def dormir(perso=PERSONNAGE, type_chambre="dehors", dérangé=False, inv=INVENTA
 
 ### Fonctions d'affichage ###
 def afficher_stats(perso=PERSONNAGE):
+    """Affiche les statistiques du personnage."""
     calculer_stats_equipement(perso)
     NomPerso = perso['Nom']
     LVL = perso['LVL']
@@ -1082,27 +1111,31 @@ def afficher_stats(perso=PERSONNAGE):
     progprint(f"╚{(longueur - 2) * '═'}╝", 0.001, gras=True)
 
 def afficher_inventaire(inv=INVENTAIRE):
+    """Affiche l'inventaire du personnage."""
     progprint("\n═════════ Inventaire ═════════", gras=True)
     progprint(gras("Équipement :"), 2)
-    for item, quantite in inv["Équipement"].items():
+    for item, quantite in list(inv.get("Équipement", {}).items()):
         details = EQUIPEMENT.get(item, {})
         effet = details.get("Effet", "Effet inconnu")
-        if quantite != 0:
-            progprint(f"  - {item} : {effet} (x{quantite})", 2)
+        if quantite == 0:
+            inv["Équipement"].pop(item, None)
         elif quantite in (-1, 1):
             progprint(f"  - {item} : {effet}", 2)
         else:
-            inv["Équipement"].pop(item)
+            progprint(f"  - {item} : {effet} (x{quantite})", 2)
     progprint(gras("Objets :"), 2)
-    for objet, quantite in inv["Objets"].items():
+    for objet, quantite in list(inv.get("Objets", {}).items()):
         if quantite != 0:
             details = OBJETS.get(objet, {})
             effet = details.get("Effet", "Effet inconnu")
             progprint(f"  - {objet} : {effet} (x{quantite})", 2)
-    progprint(f"OR : {inv['OR']}", 2, gras=True)
+        else:
+            inv["Objets"].pop(objet, None)
+    progprint(f"OR : {inv.get('OR', 0)}", 2, gras=True)
     progprint("══════════════════════════════\n", gras=True)
 
 def afficher_barre(type="PV", perso=PERSONNAGE, long_base=20, nom=True):
+    """Crée une barre de vie/énergie/expérience pour le personnage."""
     stat = perso[type]
     stat_MAX = perso[f"{type}_MAX"]
     long = max(long_base, stat_MAX // 5)
@@ -1123,6 +1156,7 @@ def afficher_barre(type="PV", perso=PERSONNAGE, long_base=20, nom=True):
         return gras(f"{barre} {type}")
 
 def choisir_actions(actions, titre=None, retour=None, cheatcode=False):
+    """Affiche un menu d'actions et retourne le choix de l'utilisateur."""
     choix = -1
     actions_dict = {i + 1: action for i, action in enumerate(actions)}
     if retour:
@@ -1153,6 +1187,7 @@ def choisir_actions(actions, titre=None, retour=None, cheatcode=False):
 
 ### Fonctions d'objets ###
 def obtenir_details_objet(NomObjet):
+    """Retourne les détails d'un objet donné."""
     objet = OBJETS.get(NomObjet, {
         "Description": ("Objet inconnu", "Effet inconnu."),
         "Type": "Inconnu",
@@ -1164,6 +1199,7 @@ def obtenir_details_objet(NomObjet):
     return NomObjet, objet
 
 def utiliser_objet(NomObjet, objet, ennemi=None, combat=False, perso=PERSONNAGE, inv=INVENTAIRE):
+    """Utilise un objet sur le personnage ou l'ennemi."""
     if NomObjet not in inv["Objets"] or inv["Objets"][NomObjet] <= 0:
         progprint(f"✘ {perso['Nom']} n'a pas de {NomObjet}.")
         return False
@@ -1228,11 +1264,13 @@ def utiliser_objet(NomObjet, objet, ennemi=None, combat=False, perso=PERSONNAGE,
     return True
 
 def acheter_objet(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
+    """Permet au personnage d'acheter des objets auprès d'un marchand."""
     NomPerso = perso["Nom"]
     NomMarch = marchand["Nom"].capitalize()
     dialogue(NomMarch, f"Voici ce que j'ai en stock.")
     
     def construire_objets_dispos():
+        """Construit la liste des objets disponibles à la vente."""
         objets_dispos = []
         for objet in marchand["Objets"]:
             quantite = marchand["Objets"][objet]
@@ -1249,6 +1287,7 @@ def acheter_objet(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
         return objets_dispos
 
     def obtenir_actions(objets_dispos):
+        """Retourne la liste des actions d'achat disponibles."""
         actions = []
         for typ, nom, prix, symbole in objets_dispos:
             stock = marchand[typ][nom]
@@ -1286,8 +1325,6 @@ def acheter_objet(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
                 inv[typ][NomItem] += 1
             else:
                 inv[typ][NomItem] = 1
-            if typ == "Équipement":
-                appliquer_equipement(perso, NomItem)
             playsound("Pièce")
             progprint(f"✓ {NomPerso} a acheté {NomItem} pour {prix} OR.", 2)
             progprint(f"OR restant : {inv['OR']} OR", 2)
@@ -1308,6 +1345,7 @@ def acheter_objet(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
     calculer_stats_equipement(perso)
 
 def vendre_objet(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
+    """Permet au personnage de vendre des objets à un marchand."""
     NomPerso = perso["Nom"]
     NomMarch = marchand["Nom"].capitalize()
     dialogue(NomMarch, f"Que souhaitez-vous me vendre ?")
@@ -1368,6 +1406,7 @@ def vendre_objet(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
 
 ### Fonctions de statistiques ###
 def verifier_niveau(perso=PERSONNAGE):
+    """Vérifie si le personnage a assez d'EXP pour monter de niveau et met à jour ses statistiques en conséquence."""
     while perso["EXP"] >= perso["EXP_MAX"]:
         perso["EXP"] -= perso["EXP_MAX"]
         perso["LVL"] += 1
@@ -1396,9 +1435,11 @@ def verifier_niveau(perso=PERSONNAGE):
         wait(0.5)
 
 def calculer_bonus(perso, stat):
+    """Calcule la statistique totale en ajoutant les bonus temporaires."""
     return perso[stat] + perso["BONUS"].get(stat, 0)
 
 def reinitialiser_bonus(perso, stats=None):
+    """Réinitialise les bonus temporaires du personnage pour les statistiques spécifiées ou toutes si aucune n'est donnée."""
     if stats is None:
         stats = perso["BONUS"].keys()
     for stat in stats:
@@ -1406,35 +1447,35 @@ def reinitialiser_bonus(perso, stats=None):
             perso["BONUS"][stat] = 0
     progprint(f"{perso['Nom']} ressent une rechute d'énergie.", 2)
 
-def appliquer_equipement(perso, nom_equip, quantite=1):
-    equip = EQUIPEMENT.get(nom_equip)
-    if not equip:
-        return
-    effet = equip.get("Effet", "")
-    if effet.startswith("+") and "ATT" in effet:
-        perso["ATT"] += equip["Valeur"] * quantite
-    elif effet.startswith("+") and "DEF" in effet:
-        perso["DEF"] += equip["Valeur"] * quantite
-        
 def calculer_stats_equipement(perso=PERSONNAGE, inv=INVENTAIRE):
-    max_att = 0
-    max_def = 0
+    """Calcule les statistiques d'attaque et de défense du personnage en fonction de son niveau et de son équipement."""
+    lvl = perso.get("LVL", 1)
+    att_base = 2 * lvl + 1
+    def_base = lvl + 1
+    meilleur_arme_val = 0
+    meilleur_armure_val = 0
     for nom, quantite in inv.get("Équipement", {}).items():
-        if quantite > 0:
-            equip = EQUIPEMENT.get(nom)
-            if equip:
-                effet = equip.get("Effet", "")
-                valeur = equip.get("Valeur", 0)
-                if "ATT" in effet and valeur > max_att:
-                    max_att = valeur
-                if "DEF" in effet and valeur > max_def:
-                    max_def = valeur
-    perso["ATT"] = max_att
-    perso["DEF"] = max_def
-    return max_att, max_def
+        if quantite <= 0:
+            continue
+        equip = EQUIPEMENT.get(nom)
+        if not equip:
+            continue
+        valeur = equip.get("Valeur", 0)
+        typ = equip.get("Type", "").lower()
+        if typ == "arme" and valeur > meilleur_arme_val:
+            meilleur_arme_val = valeur
+        elif typ == "armure" and valeur > meilleur_armure_val:
+            meilleur_armure_val = valeur
+
+    perso["ATT_BASE"] = att_base
+    perso["DEF_BASE"] = def_base
+    perso["ATT"] = att_base + meilleur_arme_val
+    perso["DEF"] = def_base + meilleur_armure_val
+    return perso["ATT"], perso["DEF"]
 
 ### Fonctions de quêtes ###
 def donner_quete(quete=None, NomDonneur=None, perso=PERSONNAGE):
+    """Propose une quête au personnage et gère son acceptation ou son refus."""
     NomPerso = perso["Nom"]
     if quete is None:
         print("⚠ Aucune quête n'a été fournie.")
@@ -1464,6 +1505,7 @@ def donner_quete(quete=None, NomDonneur=None, perso=PERSONNAGE):
     return result
 
 def terminer_quete(quete=None, perso=PERSONNAGE, inv=INVENTAIRE):
+    """Termine une quête pour le personnage et lui attribue les récompenses."""
     if quete is None:
         print("⚠ Aucune quête n'a été fournie.")
         return
@@ -1496,6 +1538,7 @@ def terminer_quete(quete=None, perso=PERSONNAGE, inv=INVENTAIRE):
 
 ### Fonctions autres ###
 def choisir_prenom(pnj, prenoms=PRENOMS):
+    """Choisit un prénom aléatoire pour le PNJ spécifié."""
     prenom = choice(prenoms)
     prenoms.remove(prenom)
     pnj["Nom"] = prenom
@@ -1503,6 +1546,7 @@ def choisir_prenom(pnj, prenoms=PRENOMS):
 
 ### Village ###
 def village(perso=PERSONNAGE, inv=INVENTAIRE):
+    """Permet au personnage d'interagir avec les différentes fonctionnalités du village."""
     NomPerso = perso["Nom"]
     playsound("Fuite")
     progprint(f"\n{NomPerso} arrive au village.", 2)
@@ -1557,6 +1601,7 @@ def village(perso=PERSONNAGE, inv=INVENTAIRE):
 
 ### Mairie ###
 def mairie(perso=PERSONNAGE):
+    """Fonction permettant d'interagir avec la mairie notamment pour obtenir des quêtes."""
     NomPerso = perso["Nom"]
     playsound("Fuite")
     progprint(f"{NomPerso} entre dans la mairie.", 2)
@@ -1598,6 +1643,7 @@ def mairie(perso=PERSONNAGE):
 
 ### Boutique ###
 def boutique(perso=PERSONNAGE, inv=INVENTAIRE):
+    """Fonction permettant d'interagir avec la boutique pour acheter ou vendre des objets."""
     NomPerso = perso["Nom"]
     playsound("Fuite")
     progprint(f"{NomPerso} entre dans la boutique.", 2)
@@ -1620,6 +1666,7 @@ def boutique(perso=PERSONNAGE, inv=INVENTAIRE):
 
 ### Auberge ###
 def auberge(perso=PERSONNAGE, inv=INVENTAIRE):
+    """Fonction permettant d'interagir avec l'auberge pour se reposer."""
     NomPerso = perso["Nom"]
     playsound("Fuite")
     progprint(f"{NomPerso} entre dans l'auberge.", 2)
@@ -1659,6 +1706,7 @@ def auberge(perso=PERSONNAGE, inv=INVENTAIRE):
 
 ### Fontaine ###
 def fontaine(perso=PERSONNAGE, inv=INVENTAIRE):
+    """Fonction permettant d'interagir avec la fontaine du village."""
     NomPerso = perso["Nom"]
     OrPerso = inv["OR"]
     playsound("Fuite")
@@ -1725,6 +1773,7 @@ def fontaine(perso=PERSONNAGE, inv=INVENTAIRE):
 
 ### Exécution ###
 def execution():
+    """Fonction principale d'exécution du jeu."""
     playsound("Titre")
     print("""
     ██╗  ██╗ █████╗ ██╗      ██████╗ ███████╗
