@@ -250,165 +250,6 @@ def parametrage():
     wait(1)
     return SONS_ACTIVES, PROGPRINT
     
-
-### Sauvegarde ###
-PROFILS = {
-    "Profil1": {},
-    "Profil2": {},
-    "Profil3": {}
-}
-
-def sauvegarder_json(profil, savedata):
-    print("↺ Sauvegarde en cours...")
-    wait(1)
-    dossier = f"saves/{profil}"
-    if not os.path.exists(dossier):
-        os.makedirs(dossier)
-    nom_fichier = f"{dossier}/save_{datetime.now().strftime('%d%m%Y_%H%M%S')}.json"
-    with open(nom_fichier, 'w') as fichier:
-        json.dump(savedata, fichier, indent=4)
-    playsound("Tidum")
-    print(f"🖫 Le jeu a été sauvegardé dans '{nom_fichier}'.")
-    wait(0.5)
-
-def charger_json(profil, nom_fichier):
-    try:
-        with open(f"saves/{profil}/{nom_fichier}", 'r') as fichier:
-            savedata = json.load(fichier)
-        playsound("Tidum")
-        print(f"↓ Le jeu a été chargé depuis la sauvegarde '{nom_fichier}'.")
-        return savedata
-    except FileNotFoundError:
-        playsound("Chip")
-        print(f"⚠ Le fichier de sauvegarde '{nom_fichier}' n'a pas été trouvé.")
-        return
-
-def choisir_profil():
-    playsound("Button")
-    print("""
-  ╔════════════════════╗
-  ║  1)   Profil 1     ║
-  ║  2)   Profil 2     ║
-  ║  3)   Profil 3     ║
-  ╚════════════════════╝\n""")
-    choix = -1
-    while choix not in ["1", "2", "3"]:
-        choix = str(input(">>> ").strip())
-    return f"Profil{choix}"
-
-def creer_partie(profil):
-    global PERSONNAGE, INVENTAIRE, SONS_ACTIVES, PROGPRINT
-    dossier = f"saves/{profil}"
-    if os.path.exists(dossier) and os.listdir(dossier):
-        playsound("Alerte")
-        progprint(f"⚠ Attention : des sauvegardes existent déjà pour {profil}.", 2)
-        confirmation = input("Voulez-vous vraiment créer une nouvelle partie ? (Oui/Non) : ").strip().lower()
-        if not confirmation.startswith("o"):
-            progprint("Création annulée.", 2)
-            wait(1)
-            return
-    nom_perso = input("Comment s'appelle ton personnage ? ").strip()
-    if not nom_perso:
-        nom_perso = "Darawen"
-    perso = PERSONNAGE
-    perso["Nom"] = nom_perso
-    save_data = {
-        "PERSONNAGE" : perso,
-        "INVENTAIRE": INVENTAIRE,
-        "SONS_ACTIVES": SONS_ACTIVES,
-        "PROGPRINT": PROGPRINT
-    }
-    print(f"🛠 Création d'une nouvelle partie sur {profil}...")
-    wait(1)
-    sauvegarder_json(profil, save_data)
-    for pnj in PNJS.values():
-        choisir_prenom(pnj)
-    parametres = parametrage()
-    save_data["SONS_ACTIVES"] = parametres[0]
-    save_data["PROGPRINT"] = parametres[1]
-    return save_data
-
-def choisir_sauvegarde(profil):
-    dossier = f"saves/{profil}"
-    if not os.path.exists(dossier):
-        playsound("Chip")
-        print("⚠ Aucune sauvegarde trouvée pour ce profil.")
-        return None
-    fichiers = os.listdir(dossier)
-    fichiers = sorted(fichiers, reverse=True)
-    if not fichiers:
-        playsound("Chip")
-        print("⚠ Aucune sauvegarde disponible.")
-        return None
-    print("\n🗁 Sauvegardes disponibles :")
-    for i, fichier in enumerate(fichiers, 1):
-        print(f"  {i}) {fichier}")
-    print("  0) Annuler")
-    choix = -1
-    while choix not in [str(i) for i in range(len(fichiers) + 1)]:
-        choix = input(">>> ").strip()
-    if choix == "0":
-        return None
-    return fichiers[int(choix) - 1]
-
-def charger_jeu(save_data):
-    global PERSONNAGE, INVENTAIRE, SONS_ACTIVES, PROGPRINT
-    PERSONNAGE = save_data["PERSONNAGE"]
-    INVENTAIRE = save_data["INVENTAIRE"]
-    SONS_ACTIVES = save_data["SONS_ACTIVES"]
-    PROGPRINT = save_data["PROGPRINT"]
-    print(f"✔ Partie de {PERSONNAGE['Nom']} chargée avec succès !")
-    wait(0.5)
-    voir_infos = input("Voulez-vous voir les infos de votre personnage ? (Oui/Non) : ").strip().lower().startswith("o")
-    if voir_infos:
-        afficher_stats(PERSONNAGE)
-        afficher_inventaire(INVENTAIRE)
-        wait(1)
-        return
-
-def menu_principal():
-    choix = -1
-    while choix not in [0, 1, 2]:
-        playsound("Button")
-        print("""
-        ╔═══════════════════════════╗
-        ║  1)   Nouvelle partie     ║
-        ║  2)   Charger une partie  ║
-        ║  0)   Quitter le jeu      ║
-        ╚═══════════════════════════╝\n""")
-        choix = input(">>> ").strip()
-        if choix == "1":
-            profil = choisir_profil()
-            save_defaut = creer_partie(profil)
-            if save_defaut == None:
-                choix = -1
-                continue
-            charger_jeu(save_defaut)
-            return
-
-        elif choix == "2":
-            profil = choisir_profil()
-            sauvegarde = choisir_sauvegarde(profil)
-            if sauvegarde != None:
-                save_data = charger_json(profil, sauvegarde)
-                if save_data:
-                    charger_jeu(save_data)
-                return
-            else:
-                choix = -1
-                wait(1)
-
-        elif choix == "0":
-            print("À bientôt !")
-            wait(1)
-            exit()
-        
-        else:
-            playsound("Chip")
-            print("⚠ Choix invalide. Veuillez réessayer.")
-            wait(1)
-  
-
 #################
 ### Variables ###
 #################
@@ -675,6 +516,165 @@ QUETES = {
         },
     }
 }
+
+### Sauvegarde ###
+PROFILS = {
+    "Profil1": {},
+    "Profil2": {},
+    "Profil3": {}
+}
+
+def sauvegarder_json(profil, savedata={"PERSONNAGE": PERSONNAGE, "INVENTAIRE": INVENTAIRE, "PNJS": PNJS, "QUETES": QUETES, "SONS_ACTIVES": SONS_ACTIVES, "PROGPRINT": PROGPRINT}):
+    print("↺ Sauvegarde en cours...")
+    wait(1)
+    dossier = f"saves/{profil}"
+    if not os.path.exists(dossier):
+        os.makedirs(dossier)
+    nom_fichier = f"{dossier}/save_{datetime.now().strftime('%d%m%Y_%H%M%S')}.json"
+    with open(nom_fichier, 'w') as fichier:
+        json.dump(savedata, fichier, indent=4)
+    playsound("Tidum")
+    print(f"🖫 Le jeu a été sauvegardé dans '{nom_fichier}'.")
+    wait(0.5)
+
+def charger_json(profil, nom_fichier):
+    try:
+        with open(f"saves/{profil}/{nom_fichier}", 'r') as fichier:
+            savedata = json.load(fichier)
+        playsound("Tidum")
+        print(f"↓ Le jeu a été chargé depuis la sauvegarde '{nom_fichier}'.")
+        return savedata
+    except FileNotFoundError:
+        playsound("Chip")
+        print(f"⚠ Le fichier de sauvegarde '{nom_fichier}' n'a pas été trouvé.")
+        return
+
+def choisir_profil():
+    playsound("Button")
+    print("""
+  ╔════════════════════╗
+  ║  1)   Profil 1     ║
+  ║  2)   Profil 2     ║
+  ║  3)   Profil 3     ║
+  ╚════════════════════╝\n""")
+    choix = -1
+    while choix not in ["1", "2", "3"]:
+        choix = str(input(">>> ").strip())
+    return f"Profil{choix}"
+
+def creer_partie(profil):
+    global PERSONNAGE, INVENTAIRE, SONS_ACTIVES, PROGPRINT
+    dossier = f"saves/{profil}"
+    if os.path.exists(dossier) and os.listdir(dossier):
+        playsound("Alerte")
+        progprint(f"⚠ Attention : des sauvegardes existent déjà pour {profil}.", 2)
+        confirmation = input("Voulez-vous vraiment créer une nouvelle partie ? (Oui/Non) : ").strip().lower()
+        if not confirmation.startswith("o"):
+            progprint("Création annulée.", 2)
+            wait(1)
+            return
+    nom_perso = input("Comment s'appelle ton personnage ? ").strip()
+    if not nom_perso:
+        nom_perso = "Darawen"
+    perso = PERSONNAGE
+    perso["Nom"] = nom_perso
+    save_data = {
+        "PERSONNAGE" : perso,
+        "INVENTAIRE": INVENTAIRE,
+        "PNJS": PNJS,
+        "QUETES": QUETES,
+        "SONS_ACTIVES": SONS_ACTIVES,
+        "PROGPRINT": PROGPRINT
+    }
+    print(f"🛠 Création d'une nouvelle partie sur {profil}...")
+    wait(1)
+    sauvegarder_json(profil, save_data)
+    for pnj in PNJS.values():
+        choisir_prenom(pnj)
+    parametres = parametrage()
+    save_data["SONS_ACTIVES"] = parametres[0]
+    save_data["PROGPRINT"] = parametres[1]
+    return save_data
+
+def choisir_sauvegarde(profil):
+    dossier = f"saves/{profil}"
+    if not os.path.exists(dossier):
+        playsound("Chip")
+        print("⚠ Aucune sauvegarde trouvée pour ce profil.")
+        return None
+    fichiers = os.listdir(dossier)
+    fichiers = sorted(fichiers, reverse=True)
+    if not fichiers:
+        playsound("Chip")
+        print("⚠ Aucune sauvegarde disponible.")
+        return None
+    print("\n🗁 Sauvegardes disponibles :")
+    for i, fichier in enumerate(fichiers, 1):
+        print(f"  {i}) {fichier}")
+    print("  0) Annuler")
+    choix = -1
+    while choix not in [str(i) for i in range(len(fichiers) + 1)]:
+        choix = input(">>> ").strip()
+    if choix == "0":
+        return None
+    return fichiers[int(choix) - 1]
+
+def charger_jeu(save_data):
+    global PERSONNAGE, INVENTAIRE, SONS_ACTIVES, PROGPRINT
+    PERSONNAGE = save_data["PERSONNAGE"]
+    INVENTAIRE = save_data["INVENTAIRE"]
+    SONS_ACTIVES = save_data["SONS_ACTIVES"]
+    PROGPRINT = save_data["PROGPRINT"]
+    print(f"✔ Partie de {PERSONNAGE['Nom']} chargée avec succès !")
+    wait(0.5)
+    voir_infos = input("Voulez-vous voir les infos de votre personnage ? (Oui/Non) : ").strip().lower().startswith("o")
+    if voir_infos:
+        afficher_stats(PERSONNAGE)
+        afficher_inventaire(INVENTAIRE)
+        wait(1)
+        return
+
+def menu_principal():
+    choix = -1
+    while choix not in [0, 1, 2]:
+        playsound("Button")
+        print("""
+        ╔═══════════════════════════╗
+        ║  1)   Nouvelle partie     ║
+        ║  2)   Charger une partie  ║
+        ║  0)   Quitter le jeu      ║
+        ╚═══════════════════════════╝\n""")
+        choix = input(">>> ").strip()
+        if choix == "1":
+            profil = choisir_profil()
+            save_defaut = creer_partie(profil)
+            if save_defaut == None:
+                choix = -1
+                continue
+            charger_jeu(save_defaut)
+            return
+
+        elif choix == "2":
+            profil = choisir_profil()
+            sauvegarde = choisir_sauvegarde(profil)
+            if sauvegarde != None:
+                save_data = charger_json(profil, sauvegarde)
+                if save_data:
+                    charger_jeu(save_data)
+                return
+            else:
+                choix = -1
+                wait(1)
+
+        elif choix == "0":
+            print("À bientôt !")
+            wait(1)
+            exit()
+        
+        else:
+            playsound("Chip")
+            print("⚠ Choix invalide. Veuillez réessayer.")
+            wait(1)
 
 
 #################
@@ -1061,6 +1061,7 @@ def dormir(perso=PERSONNAGE, type_chambre="dehors", dérangé=False, inv=INVENTA
 
 ### Fonctions d'affichage ###
 def afficher_stats(perso=PERSONNAGE):
+    calculer_stats_equipement(perso)
     NomPerso = perso['Nom']
     LVL = perso['LVL']
     EXP = afficher_barre('EXP', nom=False)
@@ -1088,10 +1089,10 @@ def afficher_inventaire(inv=INVENTAIRE):
         effet = details.get("Effet", "Effet inconnu")
         if quantite != 0:
             progprint(f"  - {item} : {effet} (x{quantite})", 2)
-        elif quantite == -1:
+        elif quantite in (-1, 1):
             progprint(f"  - {item} : {effet}", 2)
         else:
-            EQUIPEMENT.pop(item)
+            inv["Équipement"].pop(item)
     progprint(gras("Objets :"), 2)
     for objet, quantite in inv["Objets"].items():
         if quantite != 0:
@@ -1230,32 +1231,51 @@ def acheter_objet(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
     NomPerso = perso["Nom"]
     NomMarch = marchand["Nom"].capitalize()
     dialogue(NomMarch, f"Voici ce que j'ai en stock.")
-    objets_dispos = []
-    for objet in marchand["Objets"]:
-        prix = OBJETS[objet]["Prix"]
-        stock = marchand["Objets"][objet]
-        symbole = OBJETS[objet]["Symbole"]
-        if stock > 0:
-            objets_dispos.append(("Objets", objet, prix, stock, symbole))
-    for equip in marchand.get("Équipement", {}):
-        prix = EQUIPEMENT[equip]["Prix"]
-        stock = marchand["Équipement"][equip]
-        symbole = EQUIPEMENT[equip]["Symbole"]
-        if stock > 0:
-            objets_dispos.append(("Équipement", equip, prix, stock, symbole))
+    
+    def construire_objets_dispos():
+        objets_dispos = []
+        for objet in marchand["Objets"]:
+            quantite = marchand["Objets"][objet]
+            if quantite > 0:
+                prix = OBJETS[objet]["Prix"]
+                symbole = OBJETS[objet]["Symbole"]
+                objets_dispos.append(("Objets", objet, prix, symbole))
+        for equip in marchand.get("Équipement", {}):
+            quantite = marchand["Équipement"][equip]
+            if quantite > 0:
+                prix = EQUIPEMENT[equip]["Prix"]
+                symbole = EQUIPEMENT[equip]["Symbole"]
+                objets_dispos.append(("Équipement", equip, prix, symbole))
+        return objets_dispos
 
-    actions = []
-    for typ, nom, prix, stock, symbole in objets_dispos:
-        stock_str = f" (x{stock})" if stock is not None else ""
-        if typ == "Objets":
-            actions.append(f"{symbole} {nom}{stock_str} - {prix} OR")
-        else:
-            actions.append(f"{symbole} {nom} - {prix} OR")
+    def obtenir_actions(objets_dispos):
+        actions = []
+        for typ, nom, prix, symbole in objets_dispos:
+            stock = marchand[typ][nom]
+            if stock > 0:
+                stock_str = f" (x{stock})" if typ == "Objets" else ""
+                actions.append(f"{symbole} {nom}{stock_str} - {prix} OR")
+        return actions
+
+    objets_dispos = construire_objets_dispos()
+    actions = obtenir_actions(objets_dispos)
+    if not actions:
+        playsound("Chip")
+        dialogue(NomMarch, f"Désolé, je n'ai plus rien en stock !")
+        return
 
     choix = choisir_actions(actions, "Acheter", "Revenir")
     while choix != 0:
-        typ, NomItem, prix, stock, symbole = objets_dispos[choix - 1]
-        if stock is not None and stock <= 0:
+        objets_dispos = construire_objets_dispos()
+        actions = obtenir_actions(objets_dispos)
+        if not actions:
+            playsound("Chip")
+            dialogue(NomMarch, f"Désolé, je n'ai plus rien en stock !")
+            return
+        typ, NomItem, prix, _ = objets_dispos[choix - 1]
+        stock_actuel = marchand[typ][NomItem]
+        
+        if stock_actuel <= 0:
             playsound("Chip")
             progprint(f"✘ {NomMarch} n'a plus de {NomItem} en stock.", 2)
             dialogue(NomMarch, f"Oups ! Je crois que je n'en ai plus...")
@@ -1275,8 +1295,17 @@ def acheter_objet(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
             playsound("Chip")
             progprint(f"✘ {NomPerso} n'a pas assez d'or pour acheter {NomItem}.", 2)
         
+        objets_dispos = construire_objets_dispos()
+        actions = obtenir_actions(objets_dispos)
+        if not actions:
+            playsound("Chip")
+            dialogue(NomMarch, f"Désolé, je n'ai plus rien en stock !")
+            return
+        
         choix = choisir_actions(actions, "Acheter", "Revenir")
+    
     dialogue(NomMarch, f"Merci pour vos achats !", 0)
+    calculer_stats_equipement(perso)
 
 def vendre_objet(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
     NomPerso = perso["Nom"]
@@ -1329,12 +1358,13 @@ def vendre_objet(perso=PERSONNAGE, inv=INVENTAIRE, marchand=PNJS["Marchand"]):
                 objets_dispos.append(("Équipement", equip, prix, quantite, None))
         if not objets_dispos:
             progprint(f"{NomPerso} n'a plus rien à vendre.", 2)
-            break
+            return
         actions = []
         for typ, nom, prix, quantite, stock_marchand in objets_dispos:
             actions.append(f"{nom} (x{quantite}) - {prix} OR")
         choix = choisir_actions(actions, "Vendre", "Revenir")
     dialogue(NomMarch, f"Merci pour vos ventes !", 0)
+    calculer_stats_equipement(perso)
 
 ### Fonctions de statistiques ###
 def verifier_niveau(perso=PERSONNAGE):
@@ -1385,6 +1415,23 @@ def appliquer_equipement(perso, nom_equip, quantite=1):
         perso["ATT"] += equip["Valeur"] * quantite
     elif effet.startswith("+") and "DEF" in effet:
         perso["DEF"] += equip["Valeur"] * quantite
+        
+def calculer_stats_equipement(perso=PERSONNAGE, inv=INVENTAIRE):
+    max_att = 0
+    max_def = 0
+    for nom, quantite in inv.get("Équipement", {}).items():
+        if quantite > 0:
+            equip = EQUIPEMENT.get(nom)
+            if equip:
+                effet = equip.get("Effet", "")
+                valeur = equip.get("Valeur", 0)
+                if "ATT" in effet and valeur > max_att:
+                    max_att = valeur
+                if "DEF" in effet and valeur > max_def:
+                    max_def = valeur
+    perso["ATT"] = max_att
+    perso["DEF"] = max_def
+    return max_att, max_def
 
 ### Fonctions de quêtes ###
 def donner_quete(quete=None, NomDonneur=None, perso=PERSONNAGE):
@@ -1492,7 +1539,7 @@ def village(perso=PERSONNAGE, inv=INVENTAIRE):
         
         ### Sauvegarder
         elif choix == 6:
-            sauvegarder_json("Profil1", {"PERSONNAGE": PERSONNAGE, "INVENTAIRE": INVENTAIRE, "SONS_ACTIVES": SONS_ACTIVES, "PROGPRINT": PROGPRINT})
+            sauvegarder_json("Profil1", {"PERSONNAGE": PERSONNAGE, "INVENTAIRE": INVENTAIRE, "PNJS": PNJS, "QUETES": QUETES, "SONS_ACTIVES": SONS_ACTIVES, "PROGPRINT": PROGPRINT})
             
         # if choix in [1, 2, 3, 4]:
         #     playmusic("Village", stop=True, volume=0.3) # Reprendre la musique du village
@@ -1548,7 +1595,6 @@ def mairie(perso=PERSONNAGE):
             dialogue(NomMaire, f"Dommage ! On a vraiment besoin de vous ! Au revoir !")
     playsound("Fuite")
     progprint(f"{NomPerso} sort de la mairie.\n", 2)
-    stopmusic()
 
 ### Boutique ###
 def boutique(perso=PERSONNAGE, inv=INVENTAIRE):
